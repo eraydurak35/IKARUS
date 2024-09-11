@@ -1,7 +1,7 @@
 #ifndef IBUS_H
 #define IBUS_H
 
-#include "uart.h"
+#include "comminication/uart.h"
 #include "typedefs.h"
 
 void ibus_init();

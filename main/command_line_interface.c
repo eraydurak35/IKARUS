@@ -5,7 +5,7 @@
 #include "esp_vfs_dev.h"
 #include "esp_system.h"
 #include "typedefs.h"
-#include "nv_storage.h"
+#include "storage/nv_storage.h"
 #include "defaults.h"
 #include "calibration.h"
 
@@ -25,7 +25,7 @@ static calibration_t *accel_calib_data_p;
 static calibration_t *mag_calib_data_p;
 static imu_t *imu_data_p;
 
-static key_value_t config_key_value_pairs[42];
+static key_value_t config_key_value_pairs[43];
 
 // Burada kullanılan fonksiyonların prototipleri
 static int free_mem(int argc, char **argv);
@@ -67,40 +67,41 @@ void cli_begin(config_t *cfg_ptr, calibration_t *acc_p, calibration_t *mag_p, im
     config_key_value_pairs[5] = (key_value_t){"roll_d", &cfg_ptr->roll_d};
     config_key_value_pairs[6] = (key_value_t){"yaw_p", &cfg_ptr->yaw_p};
     config_key_value_pairs[7] = (key_value_t){"yaw_i", &cfg_ptr->yaw_i};
-    config_key_value_pairs[8] = (key_value_t){"pos_p", &cfg_ptr->pos_p};
-    config_key_value_pairs[9] = (key_value_t){"pos_i", &cfg_ptr->pos_i};
-    config_key_value_pairs[10] = (key_value_t){"alt_p", &cfg_ptr->alt_p};
-    config_key_value_pairs[11] = (key_value_t){"alt_i", &cfg_ptr->alt_i};
-    config_key_value_pairs[12] = (key_value_t){"alt_d", &cfg_ptr->alt_d};
-    config_key_value_pairs[13] = (key_value_t){"max_pitch_angle", &cfg_ptr->max_pitch_angle};
-    config_key_value_pairs[14] = (key_value_t){"max_roll_angle", &cfg_ptr->max_roll_angle};
-    config_key_value_pairs[15] = (key_value_t){"max_pitch_rate", &cfg_ptr->max_pitch_rate};
-    config_key_value_pairs[16] = (key_value_t){"max_roll_rate", &cfg_ptr->max_roll_rate};
-    config_key_value_pairs[17] = (key_value_t){"max_yaw_rate", &cfg_ptr->max_yaw_rate};
-    config_key_value_pairs[18] = (key_value_t){"pitch_rate_scal", &cfg_ptr->pitch_rate_scal};
-    config_key_value_pairs[19] = (key_value_t){"roll_rate_scal", &cfg_ptr->roll_rate_scal};
-    config_key_value_pairs[20] = (key_value_t){"yaw_rate_scale", &cfg_ptr->yaw_rate_scale};
-    config_key_value_pairs[21] = (key_value_t){"max_vert_vel", &cfg_ptr->max_vert_vel};
-    config_key_value_pairs[22] = (key_value_t){"max_horiz_vel", &cfg_ptr->max_horiz_vel};
-    config_key_value_pairs[23] = (key_value_t){"voltage_gain", &cfg_ptr->voltage_gain};
-    config_key_value_pairs[24] = (key_value_t){"takeoff_alt", &cfg_ptr->takeoff_alt};
-    config_key_value_pairs[25] = (key_value_t){"hover_throttle", &cfg_ptr->hover_throttle};
-    config_key_value_pairs[26] = (key_value_t){"notch_1_freq", &cfg_ptr->notch_1_freq};
-    config_key_value_pairs[27] = (key_value_t){"notch_1_bndwdht", &cfg_ptr->notch_1_bndwdht};
-    config_key_value_pairs[28] = (key_value_t){"notch_2_freq", &cfg_ptr->notch_2_freq};
-    config_key_value_pairs[29] = (key_value_t){"notch_2_bndwdht", &cfg_ptr->notch_2_bndwdht};
-    config_key_value_pairs[30] = (key_value_t){"lpf_cutoff_hz", &cfg_ptr->lpf_cutoff_hz};
-    config_key_value_pairs[31] = (key_value_t){"ahrs_filt_beta", &cfg_ptr->ahrs_filt_beta};
-    config_key_value_pairs[32] = (key_value_t){"ahrs_filt_zeta", &cfg_ptr->ahrs_filt_zeta};
-    config_key_value_pairs[33] = (key_value_t){"alt_filt_beta", &cfg_ptr->alt_filt_beta};
-    config_key_value_pairs[34] = (key_value_t){"mag_declin_deg", &cfg_ptr->mag_declin_deg};
-    config_key_value_pairs[35] = (key_value_t){"velz_filt_beta", &cfg_ptr->velz_filt_beta};
-    config_key_value_pairs[36] = (key_value_t){"velz_filt_zeta", &cfg_ptr->velz_filt_zeta};
-    config_key_value_pairs[37] = (key_value_t){"velxy_filt_beta", &cfg_ptr->velxy_filt_beta};
-    config_key_value_pairs[38] = (key_value_t){"alt_vel_scale", &cfg_ptr->alt_vel_scale};
-    config_key_value_pairs[39] = (key_value_t){"wp_threshold_cm", &cfg_ptr->wp_threshold_cm};
-    config_key_value_pairs[40] = (key_value_t){"wp_hdg_cor_gain", &cfg_ptr->wp_hdg_cor_gain};
-    config_key_value_pairs[41] = (key_value_t){"wp_dis_vel_gain", &cfg_ptr->wp_dis_vel_gain};
+    config_key_value_pairs[8] = (key_value_t){"ff_gain", &cfg_ptr->ff_gain};
+    config_key_value_pairs[9] = (key_value_t){"pos_p", &cfg_ptr->pos_p};
+    config_key_value_pairs[10] = (key_value_t){"pos_i", &cfg_ptr->pos_i};
+    config_key_value_pairs[11] = (key_value_t){"alt_p", &cfg_ptr->alt_p};
+    config_key_value_pairs[12] = (key_value_t){"alt_i", &cfg_ptr->alt_i};
+    config_key_value_pairs[13] = (key_value_t){"alt_d", &cfg_ptr->alt_d};
+    config_key_value_pairs[14] = (key_value_t){"max_pitch_angle", &cfg_ptr->max_pitch_angle};
+    config_key_value_pairs[15] = (key_value_t){"max_roll_angle", &cfg_ptr->max_roll_angle};
+    config_key_value_pairs[16] = (key_value_t){"max_pitch_rate", &cfg_ptr->max_pitch_rate};
+    config_key_value_pairs[17] = (key_value_t){"max_roll_rate", &cfg_ptr->max_roll_rate};
+    config_key_value_pairs[18] = (key_value_t){"max_yaw_rate", &cfg_ptr->max_yaw_rate};
+    config_key_value_pairs[19] = (key_value_t){"pitch_rate_scal", &cfg_ptr->pitch_rate_scal};
+    config_key_value_pairs[20] = (key_value_t){"roll_rate_scal", &cfg_ptr->roll_rate_scal};
+    config_key_value_pairs[21] = (key_value_t){"yaw_rate_scale", &cfg_ptr->yaw_rate_scale};
+    config_key_value_pairs[22] = (key_value_t){"max_vert_vel", &cfg_ptr->max_vert_vel};
+    config_key_value_pairs[23] = (key_value_t){"max_horiz_vel", &cfg_ptr->max_horiz_vel};
+    config_key_value_pairs[24] = (key_value_t){"voltage_gain", &cfg_ptr->voltage_gain};
+    config_key_value_pairs[25] = (key_value_t){"takeoff_alt", &cfg_ptr->takeoff_alt};
+    config_key_value_pairs[26] = (key_value_t){"hover_throttle", &cfg_ptr->hover_throttle};
+    config_key_value_pairs[27] = (key_value_t){"notch_1_freq", &cfg_ptr->notch_1_freq};
+    config_key_value_pairs[28] = (key_value_t){"notch_1_bndwdht", &cfg_ptr->notch_1_bndwdht};
+    config_key_value_pairs[29] = (key_value_t){"notch_2_freq", &cfg_ptr->notch_2_freq};
+    config_key_value_pairs[30] = (key_value_t){"notch_2_bndwdht", &cfg_ptr->notch_2_bndwdht};
+    config_key_value_pairs[31] = (key_value_t){"lpf_cutoff_hz", &cfg_ptr->lpf_cutoff_hz};
+    config_key_value_pairs[32] = (key_value_t){"ahrs_filt_beta", &cfg_ptr->ahrs_filt_beta};
+    config_key_value_pairs[33] = (key_value_t){"ahrs_filt_zeta", &cfg_ptr->ahrs_filt_zeta};
+    config_key_value_pairs[34] = (key_value_t){"alt_filt_beta", &cfg_ptr->alt_filt_beta};
+    config_key_value_pairs[35] = (key_value_t){"mag_declin_deg", &cfg_ptr->mag_declin_deg};
+    config_key_value_pairs[36] = (key_value_t){"velz_filt_beta", &cfg_ptr->velz_filt_beta};
+    config_key_value_pairs[37] = (key_value_t){"velz_filt_zeta", &cfg_ptr->velz_filt_zeta};
+    config_key_value_pairs[38] = (key_value_t){"velxy_filt_beta", &cfg_ptr->velxy_filt_beta};
+    config_key_value_pairs[39] = (key_value_t){"alt_vel_scale", &cfg_ptr->alt_vel_scale};
+    config_key_value_pairs[40] = (key_value_t){"wp_threshold_cm", &cfg_ptr->wp_threshold_cm};
+    config_key_value_pairs[41] = (key_value_t){"wp_hdg_cor_gain", &cfg_ptr->wp_hdg_cor_gain};
+    config_key_value_pairs[42] = (key_value_t){"wp_dis_vel_gain", &cfg_ptr->wp_dis_vel_gain};
 
     // Bu builtin fonksiyon "help" komutunda kullanıcıya kayıtlı komutları ve ne işe yaradıklarını gösterir
     esp_console_register_help_command();

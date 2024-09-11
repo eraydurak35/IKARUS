@@ -102,22 +102,11 @@ void apply_fir_filter_to_imu(imu_t *imu, fir_filter_t *fir)
 
 
 
-void notch_filter_init(notch_filter_t *notch)
-{
-    for (uint8_t i = 0; i < 18; i++)
-    {
-        notch[i].sample_rate = 2000.0f;
-        notch_configure(200.0f, 25.0f, &notch[i]);
-    }
-    
-}
-
-
 //Q = notchCenterFreq_hz / bandwidth_hz
-void notch_configure(float cf, float bw, notch_filter_t *notch)
+void biquad_notch_configure(float center_freq, float bandwidth_hz, float sample_freq, biquad_notch_filter_t *notch)
 {
-    float Q = cf / bw;
-    float omega = 2.0 * M_PI * cf / notch->sample_rate;
+    float Q = center_freq / bandwidth_hz;
+    float omega = 2.0 * M_PI * center_freq / sample_freq;
     float sn = sinf(omega);
     float cs = cosf(omega);
     float alpha = sn / (2.0 * Q);
@@ -138,7 +127,7 @@ void notch_configure(float cf, float bw, notch_filter_t *notch)
 }
 
 // perform one filtering step
-void notch_filter(notch_filter_t *notch, float *value)
+void notch_filter(biquad_notch_filter_t *notch, float *value)
 {
     static float x = 0;
     static float y = 0;
@@ -151,21 +140,6 @@ void notch_filter(notch_filter_t *notch, float *value)
     *value = y;
 }
 
-
-
-
-void apply_notch_filter_to_imu(imu_t *imu, notch_filter_t *notch)
-{
-    for (uint8_t i = 0; i < 3; ++i) 
-    {
-        for (uint8_t j = 0; j < 3; ++j) 
-        {
-            notch_filter(&notch[i * 3 + j], &imu->gyro_dps[i]);
-            notch_filter(&notch[9 + i * 3 + j], &imu->accel_ms2[i]);
-        }
-    }
-
-}
 
 void biquad_lpf_configure(float cf, float sample_freq, biquad_lpf_t *lowpass)
 {
@@ -209,11 +183,28 @@ void biquad_lpf_array_init(uint8_t lenght, biquad_lpf_t *lpf, float cutoff_freq,
     }
 }
 
+void biquad_notch_filter_array_init(uint8_t lenght, biquad_notch_filter_t *notch, float center_freq, float bandwidth_hz, float sample_freq)
+{
+    for (uint8_t i = 0; i < lenght; i++)
+    {
+        biquad_notch_configure(center_freq, bandwidth_hz, sample_freq, notch + i);
+    }
+}
+
 void apply_biquad_lpf_to_imu(imu_t *imu, biquad_lpf_t *lpf)
 {
     for (uint8_t i = 0; i < 3; i++)
     {
         biquad_lpf(&lpf[i], &imu->gyro_dps[i]);
         biquad_lpf(&lpf[i+3], &imu->accel_ms2[i]);
+    }
+}
+
+void apply_biquad_notch_filter_to_imu(imu_t *imu, biquad_notch_filter_t *notch)
+{
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        notch_filter(&notch[i], &imu->gyro_dps[i]);
+        notch_filter(&notch[i+3], &imu->accel_ms2[i]);
     }
 }

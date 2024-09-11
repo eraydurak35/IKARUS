@@ -1,5 +1,5 @@
 #include "ibus.h"
-#include "uart.h"
+#include "comminication/uart.h"
 #include <string.h>
 #include "typedefs.h"
 
@@ -9,7 +9,7 @@ static void parse_ibus_data(radio_control_t *radio);
 
 void ibus_init()
 {
-    uart_begin(UART_NUM_1, 115200, UART1_PIN_RX, UART1_PIN_TX, UART_PARITY_DISABLE);
+    uart_begin(UART_NUM_1, 115200, UART1_PIN_TX, UART1_PIN_RX, UART_PARITY_DISABLE);
 }
 
 void ibus_receiver_read(radio_control_t *rc)

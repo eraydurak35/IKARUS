@@ -1,5 +1,5 @@
-#include "ublox.h"
-#include "uart.h"
+#include "sensors/ublox.h"
+#include "comminication/uart.h"
 #include "setup.h"
 
 
@@ -40,7 +40,7 @@ void gnss_init()
 
     #if SETUP_GNSS_TYPE == GNSS_UBX_M8
 
-    uart_begin(UART_NUM_0, 9600, UART0_PIN_RX, UART0_PIN_TX, UART_PARITY_DISABLE);
+    uart_begin(UART_NUM_0, 9600, UART0_PIN_TX, UART0_PIN_RX, UART_PARITY_DISABLE);
     vTaskDelay(500);
 
     uart_write(UART_NUM_0, set_to_921600_baud, sizeof(set_to_921600_baud));
@@ -65,7 +65,7 @@ void gnss_init()
 
     #elif SETUP_GNSS_TYPE == GNSS_UBX_M10
 
-    uart_begin(UART_NUM_0, 38400, UART0_PIN_RX, UART0_PIN_TX, UART_PARITY_DISABLE);
+    uart_begin(UART_NUM_0, 38400, UART0_PIN_TX, UART0_PIN_RX, UART_PARITY_DISABLE);
     vTaskDelay(1000);
 
     uart_write(UART_NUM_0, set_baudrate_115200, sizeof(set_baudrate_115200));
@@ -100,7 +100,7 @@ static void parse_ubx_data(gnss_t *gnss_ptr)
     static uint16_t start_message;
     static uint8_t RecBytes[110];
     static uint8_t byte_counter;
-    #if SETUP_GNSS_TYPE == GNSS_UBX_M8 || GNSS_NONE
+    #if SETUP_GNSS_TYPE == GNSS_UBX_M8 || SETUP_GNSS_TYPE == GNSS_NONE
     static const uint8_t PVT_Message_Size = 90;
     #elif SETUP_GNSS_TYPE == GNSS_UBX_M10
     static const uint8_t PVT_Message_Size = 98;
@@ -188,6 +188,7 @@ static void parse_ubx_data(gnss_t *gnss_ptr)
 void gnss_read(gnss_t *gnss_ptr)
 {
     uart_read(UART_NUM_0, &uart_data, 50);
+    //printf("%d\n", uart_data.lenght);
     parse_ubx_data(gnss_ptr);
 }
 

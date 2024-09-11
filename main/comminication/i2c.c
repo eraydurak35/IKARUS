@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "i2c.h"
+#include "comminication/i2c.h"
 #include "driver/i2c.h"
 
 

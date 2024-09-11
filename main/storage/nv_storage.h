@@ -7,7 +7,8 @@ enum Storage
 {
     CONFIG_DATA,
     ACCEL_CALIB_DATA,
-    MAG_CALIB_DATA
+    MAG_CALIB_DATA,
+    MISSION_DATA
 };
 
 uint8_t storage_save(void *ptr, enum Storage type);

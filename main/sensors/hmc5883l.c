@@ -1,7 +1,8 @@
 #include <stdio.h>
-#include "hmc5883l.h"
-#include "i2c.h"
+#include "sensors/hmc5883l.h"
+#include "comminication/i2c.h"
 #include "typedefs.h"
+#include "esp_log.h"
 
 static calibration_t *mag_calib_data = NULL;
 
@@ -13,7 +14,7 @@ uint8_t hmc5883l_setup(calibration_t *mg_cal)
     uint8_t ret = i2c_read_byte(I2C_NUM_0, HMC5883L_ADDR ,HMC5883L_WHO_AM_I_REG);
     if (ret != HMC5883L_WHO_AM_I_RET)
     {
-        printf("HMC5883L WHO_AM_I Failed!!\n");
+        ESP_LOGE("Magnetometer", "HMC5883L WHO_AM_I Failed!!");
         return 1;
     }
     mag_calib_data = mg_cal;

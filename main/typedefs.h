@@ -8,6 +8,8 @@
 #define Z 2
 
 #define BUFF_SIZE 130
+#define RAD_TO_DEG 57.29577951f
+#define DEG_TO_RAD 0.01745329f
 
 typedef struct
 {
@@ -175,6 +177,7 @@ typedef struct
     float roll_d;
     float yaw_p;
     float yaw_i;
+    float ff_gain;
     float pos_p;
     float pos_i;
     float alt_p;
@@ -218,9 +221,9 @@ typedef struct {
 
 typedef struct
 {
-    int32_t latitude[25];
-    int32_t longitude[25];
-    uint8_t altitude[25];
+    int32_t latitude[50];
+    int32_t longitude[50];
+    uint8_t altitude[50];
     int8_t counter;
     uint8_t is_reached;
     uint8_t end_of_mission_behaviour;
@@ -260,24 +263,6 @@ typedef struct
     float altitude_m;
     float velocity_ms;
 } bmp390_t;
-
-/* typedef struct
-{
-    int16_t ch0;
-    int16_t ch1;
-    int16_t ch2;
-    int16_t ch3;
-    int16_t ch4;
-    int16_t ch5;
-    int16_t ch6;
-    int16_t ch7;
-    int16_t ch8;
-    int16_t ch9;
-    int16_t ch10;
-    int16_t ch11;
-    int16_t ch12;
-    int16_t ch13;
-} radio_control_t; */
 
 typedef struct
 {
@@ -324,12 +309,6 @@ typedef struct
   float velocity_y_ms;
   float quality;
 } pmw3901_t;
-
-typedef struct
-{
-    float x;
-    float y;
-} vector2_t;
 
 typedef struct
 {

@@ -3,11 +3,12 @@
 #include "math.h"
 #include "quaternion.h"
 #include "filters.h"
-#include "nv_storage.h"
+#include "storage/nv_storage.h"
 #include "typedefs.h"
+#include "esp_log.h"
 
 static calibration_t calibration_data;
-
+static const char *TAG = "Calibration";
 // İvme ölçer sensörün kalibrasyonunu gerçekleştirir
 // Kalibrasyon sürerken 0, kalibrasyon bittiğinde 1 döndürür
 uint8_t accelerometer_calibration(imu_t *imu)
@@ -26,7 +27,7 @@ uint8_t accelerometer_calibration(imu_t *imu)
     static uint8_t current_direction_number = 0;
     // Kalibrasyonun gerçekleştirilmesi 6 ana yönde yapılacak ölçümler ile mümkündür.
     // Ölçüm yapılacak yönleri temsil eden vektörler (X, Y, Z) sıralaması ile yazılmıştır
-    static vector_t referance_vector[6] = 
+    static vector3_t referance_vector[6] = 
     {
         {0.0f, 1.0f, 0.0f},     // Yukarı (Up)
         {-1.0f, 0.0f, 0.0f},    // Sağa   (Right)
@@ -44,7 +45,7 @@ uint8_t accelerometer_calibration(imu_t *imu)
     imu->accel_ms2[Z] = median_filter(&filter_z, imu->accel_ms2[Z]);
 
     // Filtrelenmiş ivme değerlerini vektör haline getir.
-    vector_t accel_vector = {imu->accel_ms2[X], imu->accel_ms2[Y], imu->accel_ms2[Z]};
+    vector3_t accel_vector = {imu->accel_ms2[X], imu->accel_ms2[Y], imu->accel_ms2[Z]};
 
     // O an ölçülmesi gereken yön vektörü ile sensörden elde edilen yön vektörü arasındaki açıyı hesapla
     // Bu açı 0'a çok yakınsa kullanıcı sensörü doğru yönde tutuyor demektir.
@@ -61,7 +62,6 @@ uint8_t accelerometer_calibration(imu_t *imu)
         y_values[current_direction_number] += imu->accel_ms2[Y];
         z_values[current_direction_number] += imu->accel_ms2[Z];
 
-        printf("%.2f, %.2f, %.2f\n", x_values[current_direction_number], y_values[current_direction_number], z_values[current_direction_number]);
         // Kaç adet veri toplandığını tut
         data_point_counter++;
         // Yeterince veri toplandıysa kalibrasyonu tamamla
@@ -71,7 +71,6 @@ uint8_t accelerometer_calibration(imu_t *imu)
             x_values[current_direction_number] /= 1000.0f;
             y_values[current_direction_number] /= 1000.0f;
             z_values[current_direction_number] /= 1000.0f;
-            printf("%.2f, %.2f, %.2f\n", x_values[current_direction_number], y_values[current_direction_number], z_values[current_direction_number]);
             // Sonraki kalibrasyon yönüne geç
             current_direction_number++;
 
@@ -100,8 +99,8 @@ uint8_t accelerometer_calibration(imu_t *imu)
                 // Bulunan kalibrasyon değerlerini kaydet
                 storage_save(&calibration_data, ACCEL_CALIB_DATA);
 
-                printf("offset X: %.3f  Y: %.3f  Z: %.3f\n", calibration_data.offset[X], calibration_data.offset[Y], calibration_data.offset[Z]);
-                printf("scale X: %.3f  Y: %.3f  Z: %.3f\n", calibration_data.scale[X], calibration_data.scale[Y], calibration_data.scale[Z]);
+                ESP_LOGI(TAG, "ACC Offset X: %.3f  Y: %.3f  Z: %.3f\n", calibration_data.offset[X], calibration_data.offset[Y], calibration_data.offset[Z]);
+                ESP_LOGI(TAG, "ACC Scale X: %.3f  Y: %.3f  Z: %.3f\n", calibration_data.scale[X], calibration_data.scale[Y], calibration_data.scale[Z]);
                 // Kalibrasyon tamamlandı 1 döndür
                 return 1;
             }
@@ -198,8 +197,6 @@ uint8_t magnetometer_calibration(magnetometer_t *mag)
         // Sayaç 1200 e ulaştığında kalibrasyon tamamlanır.
         if (counter == 1200)
         {
-            printf("xb:%.2f  xs:%.2f  yb:%.2f  ys:%.2f  zb:%.2f  zs:%.2f\n", x_biggest_value, x_smallest_value, y_biggest_value, y_smallest_value, z_biggest_value, z_smallest_value);
-
             // Tespit edilen en büyük ve en küçük değerlerden offset değerini hesaplar
             calibration_data.offset[X] = (x_biggest_value + x_smallest_value) / 2.0f;
             calibration_data.offset[Y] = (y_biggest_value + y_smallest_value) / 2.0f;
@@ -226,8 +223,8 @@ uint8_t magnetometer_calibration(magnetometer_t *mag)
             // Bulunan kalibrasyon değerlerini kayet
             storage_save(&calibration_data, MAG_CALIB_DATA);
             
-            printf("offset X: %.3f  Y: %.3f  Z: %.3f\n", calibration_data.offset[X], calibration_data.offset[Y], calibration_data.offset[Z]);
-            printf("scale X: %.3f  Y: %.3f  Z: %.3f\n", calibration_data.scale[X], calibration_data.scale[Y], calibration_data.scale[Z]);
+            ESP_LOGI(TAG, "MAG Offset X: %.3f  Y: %.3f  Z: %.3f\n", calibration_data.offset[X], calibration_data.offset[Y], calibration_data.offset[Z]);
+            ESP_LOGI(TAG, "MAG Scale X: %.3f  Y: %.3f  Z: %.3f\n", calibration_data.scale[X], calibration_data.scale[Y], calibration_data.scale[Z]);
 
             // Kalibrasyon tamamlandır 1 döndür
             return 1;
@@ -264,7 +261,7 @@ uint8_t gyro_calibration(imu_t *imu)
             imu->gyro_bias_dps[Y] = sum_y / 1000.0f;
             imu->gyro_bias_dps[Z] = sum_z / 1000.0f;
             // Bulunan kayıklık değerini yazdır.
-            printf("Gyro offset --> X: %.4f  Y: %.4f  Z: %.4f\n\n", imu->gyro_bias_dps[X], imu->gyro_bias_dps[Y], imu->gyro_bias_dps[Z]);
+            ESP_LOGI(TAG, "Gyro offset --> X: %.4f  Y: %.4f  Z: %.4f\n\n", imu->gyro_bias_dps[X], imu->gyro_bias_dps[Y], imu->gyro_bias_dps[Z]);
             // Kalibrasyonun tamamlandığını bildir
             return 1;
         }

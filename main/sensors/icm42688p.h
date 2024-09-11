@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include "driver/spi_master.h"
-#include "spi.h"
+#include "comminication/spi.h"
 #include "typedefs.h"
 
 #define GYRO_CONFIG0 0x4F

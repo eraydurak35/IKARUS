@@ -1,5 +1,5 @@
 #include "state_estimator.h"
-#include "bmp390.h"
+#include "sensors/bmp390.h"
 #include "math.h"
 #include "typedefs.h"
 #include "quaternion.h"
@@ -10,13 +10,13 @@
 
 static quat_t q = {1.0f, 0.0f, 0.0f, 0.0f};
 static quat_t q_dot = {0.0f, 0.0f, 0.0f, 0.0f};
-static vector_t gyr_vec = {0.0f, 0.0f, 0.0f};
-static vector_t acc_vec = {0.0f, 0.0f, 1.0f};
-static vector_t mag_vec = {1.0f, 0.0f, 0.0f};
-static vector_t err = {0.0f, 0.0f, 0.0f};
-static vector_t local_vr_a = {0.0f, 0.0f, 0.0f};
+static vector3_t gyr_vec = {0.0f, 0.0f, 0.0f};
+static vector3_t acc_vec = {0.0f, 0.0f, 1.0f};
+static vector3_t mag_vec = {1.0f, 0.0f, 0.0f};
+static vector3_t err = {0.0f, 0.0f, 0.0f};
+static vector3_t local_vr_a = {0.0f, 0.0f, 0.0f};
 #if SETUP_MAGNETO_TYPE != MAG_NONE
-static vector_t local_vr_m = {0.0f, 0.0f, 0.0f};
+static vector3_t local_vr_m = {0.0f, 0.0f, 0.0f};
 #endif
 static states_t *state_ptr = NULL;
 static imu_t *imu_ptr = NULL;
@@ -106,8 +106,7 @@ void ahrs_predict()
 
 void ahrs_correct()
 {
-    static vector_t err_acc = {0.0f, 0.0f, 0.0f};
-
+    static vector3_t err_acc = {0.0f, 0.0f, 0.0f};
 
     acc_vec.x = imu_ptr->accel_ms2[Y];
     acc_vec.y = imu_ptr->accel_ms2[X];
@@ -117,8 +116,8 @@ void ahrs_correct()
     mag_vec.y = -mag_ptr->axis[Y];
     mag_vec.z = mag_ptr->axis[Z];
 
-    norm_vector(&acc_vec);
-    norm_vector(&mag_vec);
+    norm_vector3(&acc_vec);
+    norm_vector3(&mag_vec);
 
     local_vr_a.x = 2.0f * ((q.x * q.z) - (q.w * q.y));
     local_vr_a.y = 2.0f * ((q.w * q.x) + (q.y * q.z));
@@ -132,8 +131,8 @@ void ahrs_correct()
     local_vr_m.y = 2.0f * ((q.w * q.w) + (q.y * q.y)) - 1.0f;
     local_vr_m.z = 2.0f * ((q.y * q.z) - (q.w * q.x));
 
-    static vector_t err_mag = {0.0f, 0.0f, 0.0f};
-    static vector_t temp = {0.0f, 0.0f, 0.0f};
+    static vector3_t err_mag = {0.0f, 0.0f, 0.0f};
+    static vector3_t temp = {0.0f, 0.0f, 0.0f};
 
     temp = cross_product(&acc_vec, &mag_vec);
     err_mag = cross_product(&temp, &local_vr_m);
@@ -179,13 +178,17 @@ void ahrs_correct()
 
 #endif
 
+    limit_symmetric(&imu_ptr->gyro_bias_dps[X], GYRO_PREDICTED_BIAS_DPS_MAX);
+    limit_symmetric(&imu_ptr->gyro_bias_dps[Y], GYRO_PREDICTED_BIAS_DPS_MAX);
+    limit_symmetric(&imu_ptr->gyro_bias_dps[Z], GYRO_PREDICTED_BIAS_DPS_MAX);
+
     get_attitude_heading();
 }
 
 static void get_attitude_heading()
 {
     static quat_t q_conj;
-    static vector_t euler;
+    static vector3_t euler;
 
     q_conj = quat_conj(&q);
     quat_to_euler(&q_conj, &euler);

@@ -11,7 +11,7 @@
     "idf.openOcdConfigs": [
         "board/esp32s3-builtin.cfg"
     ],
-    "idf.portWin": "COM8",
+    "idf.portWin": "COM11",
     "idf.pythonBinPathWin": "c:\\espidf2024\\tool\\python_env\\idf5.1_py3.11_env\\Scripts\\python.exe",
     "idf.toolsPathWin": "c:\\espidf2024\\tool",
     "idf.flashType": "UART",
@@ -21,6 +21,15 @@
         "dshot_esc_encoder.h": "c",
         "setup.h": "c",
         "typedefs.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "math.h": "c",
+        "ibus.h": "c",
+        "filters.h": "c",
+        "small_drone_control.h": "c",
+        "calibration.h": "c",
+        "i2c.h": "c",
+        "pmw3901.h": "c",
+        "hmc5883l.h": "c",
+        "blackbox.h": "c"
     }
 }

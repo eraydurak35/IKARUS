@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "driver/spi_master.h"
-#include "spi.h"
+#include "comminication/spi.h"
 #include <string.h>
 
 void spi_master_init(uint8_t miso_pin_num, uint8_t mosi_pin_num, uint8_t clk_pin_num)

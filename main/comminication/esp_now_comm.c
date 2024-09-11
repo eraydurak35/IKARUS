@@ -1,10 +1,11 @@
 #include <string.h>
-#include "esp_now_comm.h"
+#include "comminication/esp_now_comm.h"
 #include "esp_now.h"
 #include "esp_wifi.h"
 #include "esp_private/wifi.h"
 #include "esp_timer.h"
 #include <math.h>
+#include "storage/nv_storage.h"
 
 static const uint8_t drone_mac_address[6] = {0x04, 0x61, 0x05, 0x05, 0x3A, 0xE4};
 static const uint8_t ground_station_mac_address[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
@@ -22,18 +23,20 @@ static target_t *target_ptr = NULL;
 static gnss_t *gnss_ptr = NULL;
 static pmw3901_t *flow_ptr = NULL;
 static range_finder_t *range_ptr = NULL;
-static uint8_t *new_data_recv_flag = NULL;
 static uint8_t *motor_test_num_ptr = NULL;
 static const uint8_t *mag_data;
 static const uint8_t *acc_data;
-
 static gamepad_t *gamepad_ptr = NULL;
+
+static uint8_t recieved_command_flag;
 
 static void espnow_receive_cb(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len);
 static void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
 static void parse_mission_data(const uint8_t *data, uint8_t len);
+static void respond_to_requests();
 
-void esp_now_comm_init(config_t *cfg, waypoint_t *wp, uint8_t *flg, uint8_t *mtr_tst, telemetry_t *telem, flight_t *flt, states_t *stt, imu_t *imu, magnetometer_t *mag, bmp390_t *baro, gnss_t *gnss, pmw3901_t *flow, range_finder_t *range, target_t *target, gamepad_t *gmpd)
+
+void esp_now_comm_init(config_t *cfg, waypoint_t *wp, uint8_t *mtr_tst, telemetry_t *telem, flight_t *flt, states_t *stt, imu_t *imu, magnetometer_t *mag, bmp390_t *baro, gnss_t *gnss, pmw3901_t *flow, range_finder_t *range, target_t *target, gamepad_t *gmpd)
 {
     wifi_init_config_t wifi_cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&wifi_cfg));
@@ -56,7 +59,6 @@ void esp_now_comm_init(config_t *cfg, waypoint_t *wp, uint8_t *flg, uint8_t *mtr
 
     config_ptr = cfg;
     waypoint_ptr = wp;
-    new_data_recv_flag = flg;
     motor_test_num_ptr = mtr_tst;
     gamepad_ptr = gmpd;
     telemetry_ptr = telem;
@@ -90,7 +92,7 @@ void esp_now_send_telemetry()
     telemetry_ptr->barometer_pressure = baro_ptr->press * 10.0f;
     telemetry_ptr->barometer_temperature = baro_ptr->temp * 100.0f;
     telemetry_ptr->altitude = baro_ptr->altitude_m * 100.0f;
-    telemetry_ptr->altitude_calibrated = state_ptr->altitude_m;
+    telemetry_ptr->altitude_calibrated = state_ptr->altitude_m * 100.0f;
     telemetry_ptr->velocity_x_ms = state_ptr->vel_forward_ms * 1000.0f;
     telemetry_ptr->velocity_y_ms = state_ptr->vel_right_ms * 1000.0f;
     telemetry_ptr->velocity_z_ms = state_ptr->vel_up_ms * 1000.0f;
@@ -146,7 +148,25 @@ void esp_now_send_telemetry()
     uint8_t buffer[sizeof(telemetry_t) + 1];
     buffer[0] = TELEM_HEADER;
     memcpy(buffer + 1, (uint8_t *)telemetry_ptr, sizeof(telemetry_t));
-    esp_now_send(ground_station_mac_address, buffer, sizeof(buffer));
+    ESP_ERROR_CHECK(esp_now_send(ground_station_mac_address, buffer, sizeof(buffer)));
+
+    respond_to_requests();
+}
+
+static void respond_to_requests()
+{
+    if (recieved_command_flag == 3)
+    {
+        printf("Config requested\n");
+        esp_now_send_config(config_ptr);
+        recieved_command_flag = 0;
+    }
+    else if (recieved_command_flag == 4)
+    {
+        printf("Mission requested\n");
+        esp_now_send_mission();
+        recieved_command_flag = 0;
+    }
 }
 
 void esp_now_send_config(config_t *conf)
@@ -154,21 +174,11 @@ void esp_now_send_config(config_t *conf)
     uint8_t buffer[sizeof(config_t) + 1];
     buffer[0] = CONF_HEADER;
     memcpy(buffer + 1, (uint8_t *)conf, sizeof(config_t));
-    esp_now_send(ground_station_mac_address, buffer, sizeof(buffer));
+    ESP_ERROR_CHECK(esp_now_send(ground_station_mac_address, buffer, sizeof(buffer)));
 }
 
 void esp_now_send_mission()
 {
-/*     uint8_t buffer[sizeof(waypoint_ptr->latitude) + sizeof(waypoint_ptr->longitude) + sizeof(waypoint_ptr->altitude) + sizeof(waypoint_ptr->end_of_mission_behaviour) + 1];
-    buffer[0] = WP_HEADER;
-    memcpy(buffer + 1, waypoint_ptr->latitude, sizeof(waypoint_ptr->latitude));
-    memcpy(buffer + 1 + sizeof(waypoint_ptr->latitude), waypoint_ptr->longitude, sizeof(waypoint_ptr->longitude));
-    memcpy(buffer + 1 + sizeof(waypoint_ptr->latitude) + sizeof(waypoint_ptr->longitude), waypoint_ptr->altitude, sizeof(waypoint_ptr->altitude));
-    buffer[226] = waypoint_ptr->end_of_mission_behaviour;
-    esp_now_send(ground_station_mac_address, buffer, sizeof(buffer));
- */
- 
-
     uint8_t buffer[228];
     buffer[0] = WP_HEADER;
     buffer[1] = 1;
@@ -177,7 +187,7 @@ void esp_now_send_mission()
     memcpy(buffer + 2 + 100 + 100, waypoint_ptr->altitude, 25);
     buffer[227] = waypoint_ptr->end_of_mission_behaviour;
 
-    esp_now_send(ground_station_mac_address, buffer, sizeof(buffer));
+    ESP_ERROR_CHECK(esp_now_send(ground_station_mac_address, buffer, sizeof(buffer)));
 
     vTaskDelay(200);
 
@@ -187,14 +197,14 @@ void esp_now_send_mission()
     memcpy(buffer + 2 + 100 + 100, waypoint_ptr->altitude + 25, 25);
     buffer[227] = waypoint_ptr->end_of_mission_behaviour;
 
-    esp_now_send(ground_station_mac_address, buffer, sizeof(buffer));
+    ESP_ERROR_CHECK(esp_now_send(ground_station_mac_address, buffer, sizeof(buffer)));
 }
 void esp_now_send_motor_test_result(float *result)
 {
     uint8_t buffer[sizeof(float) * 4 + 1];
     buffer[0] = MTR_TEST_HEADER;
     memcpy(buffer + 1, result, sizeof(float) * 4);
-    esp_now_send(ground_station_mac_address, buffer, sizeof(buffer));
+    ESP_ERROR_CHECK(esp_now_send(ground_station_mac_address, buffer, sizeof(buffer)));
 }
 static void espnow_receive_cb(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len)
 {
@@ -207,8 +217,9 @@ static void espnow_receive_cb(const esp_now_recv_info_t *recv_info, const uint8_
     if (data[0] == 0xFE && len == sizeof(config_t) + 1)
     {
         memcpy(config_ptr, data + 1, sizeof(config_t));
-/*         save_config(config_ptr); */
-        *new_data_recv_flag = 1;
+        if (storage_save(config_ptr, CONFIG_DATA)) printf("Configuration saved\n");
+        else printf("ERROR: Configuration NOT saved!\n");
+        recieved_command_flag = 1;
     }
     else if (data[0] == 0xFD && len == 228)
     {
@@ -216,12 +227,12 @@ static void espnow_receive_cb(const esp_now_recv_info_t *recv_info, const uint8_
     }
     else if (data[0] == 0xFC && len == 2)
     {
-        if (data[1] == 10) *new_data_recv_flag = 3;
-        else if (data[1] == 20) *new_data_recv_flag = 4;
+        if (data[1] == 10) recieved_command_flag = 3;
+        else if (data[1] == 20) recieved_command_flag = 4;
     }
     else if (data[0] == 0xFB && len == 49)
     {
-        *new_data_recv_flag = 5;
+        recieved_command_flag = 5;
         mag_data = data;
     }
     else if (data[0] == 0xFA)
@@ -230,7 +241,7 @@ static void espnow_receive_cb(const esp_now_recv_info_t *recv_info, const uint8_
     }
     else if (data[0] == 0xF9)
     {
-        *new_data_recv_flag = 6;
+        recieved_command_flag = 6;
         acc_data = data;
     }
 
@@ -274,15 +285,15 @@ static void parse_mission_data(const uint8_t *data, uint8_t len)
         waypoint_ptr->end_of_mission_behaviour = data[227];
         waypoint_ptr->counter = 0;
         waypoint_ptr->is_reached = 1;
-        *new_data_recv_flag = 2;
+        recieved_command_flag = 2;
 
-       /*  save_mission(waypoint_ptr); */
+        storage_save(waypoint_ptr, MISSION_DATA);
 
-        /*
+        /*      
         for (int i = 0; i < 50; i++) 
         {
             printf("Waypoint %d: Enlem = %ld, Boylam = %ld, Yükseklik = %u\n", i, waypoint_ptr->latitude[i], waypoint_ptr->longitude[i], waypoint_ptr->altitude[i]);
-        } 
+        }  
         */
     }
 }

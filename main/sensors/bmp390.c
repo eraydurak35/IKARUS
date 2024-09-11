@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <math.h>
-#include "bmp390.h"
-#include "i2c.h"
-#include "spi.h"
+#include "sensors/bmp390.h"
+#include "comminication/i2c.h"
+#include "comminication/spi.h"
 #include "driver/spi_master.h"
 #include "esp_timer.h"
 #include "typedefs.h"
@@ -23,16 +23,16 @@ void bmp390_setup_i2c()
 
     parse_bmp390_calib_bytes(buff);
 
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(10);
     i2c_write_byte(I2C_NUM_1, BMP390_ADDR, CONFIG_BMP390, IIR_FILT_7);
 
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(10);
     i2c_write_byte(I2C_NUM_1, BMP390_ADDR, ODR_REG, ODR_50HZ);
 
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(10);
     i2c_write_byte(I2C_NUM_1, BMP390_ADDR, OSR_REG, OSR_TEMP_NO_OSR | OSR_PRES_8X);
 
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(10);
     i2c_write_byte(I2C_NUM_1, BMP390_ADDR, PWR_CTRL, MODE_NORMAL | TEMP_ON | PRESS_ON);
 }
 
@@ -42,25 +42,25 @@ void bmp390_setup_spi()
     spi_add_device_to_bus(&bmp390_handle, BMP390_CS_PIN, SPI_FREQ);
 
     uint8_t buff[22] = {0};
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    vTaskDelay(100);
     spi_read_bytes(bmp390_handle, CALIB_START_REG, buff, 22);
 
     // FIRST BYTE IS DUMMY (DISCARTED)
     parse_bmp390_calib_bytes(buff + 1);
 
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(10);
 
     spi_write_byte(bmp390_handle, CONFIG_BMP390, IIR_FILT_7);
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(10);
 
     spi_write_byte(bmp390_handle, ODR_REG, ODR_50HZ);
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(10);
 
     spi_write_byte(bmp390_handle, OSR_REG, OSR_TEMP_NO_OSR | OSR_PRES_8X);
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(10);
 
     spi_write_byte(bmp390_handle, PWR_CTRL, MODE_NORMAL | TEMP_ON | PRESS_ON);
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(10);
 }
 
 static void parse_bmp390_calib_bytes(uint8_t *buffer)

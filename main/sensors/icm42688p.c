@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "icm42688p.h"
-#include "spi.h"
+#include "sensors/icm42688p.h"
+#include "comminication/spi.h"
 #include "math.h"
 #include "driver/spi_master.h"
 #include "freertos/task.h"
@@ -20,7 +20,7 @@ void icm42688p_setup(calibration_t *acc_cal)
     spi_write_byte(icm42688p_handle, ICM426XX_RA_REG_BANK_SEL, ICM426XX_BANK_SELECT0);
     // Turn gyro acc off
     spi_write_byte(icm42688p_handle, ICM426XX_RA_PWR_MGMT0, ICM426XX_PWR_MGMT0_GYRO_ACCEL_MODE_OFF);
-    vTaskDelay(20 / portTICK_PERIOD_MS);
+    vTaskDelay(20);
 
     // gyro LPF 258Hz
     spi_write_byte(icm42688p_handle, ICM426XX_RA_REG_BANK_SEL, ICM426XX_BANK_SELECT1);
@@ -28,7 +28,7 @@ void icm42688p_setup(calibration_t *acc_cal)
     spi_write_byte(icm42688p_handle, ICM426XX_RA_GYRO_CONFIG_STATIC4, 36 & 0xFF);
     spi_write_byte(icm42688p_handle, ICM426XX_RA_GYRO_CONFIG_STATIC5, (36 >> 8) | (10 << 4));
 
-    vTaskDelay(20 / portTICK_PERIOD_MS);
+    vTaskDelay(20);
     // acc LPF 258Hz
     spi_write_byte(icm42688p_handle, ICM426XX_RA_REG_BANK_SEL, ICM426XX_BANK_SELECT2);
 
@@ -37,25 +37,29 @@ void icm42688p_setup(calibration_t *acc_cal)
     spi_write_byte(icm42688p_handle, ICM426XX_RA_ACCEL_CONFIG_STATIC4, (36 >> 8) | (10 << 4));
 
 
-    vTaskDelay(20 / portTICK_PERIOD_MS);
+    vTaskDelay(20);
     // Configure gyro and acc UI Filters
     spi_write_byte(icm42688p_handle, ICM426XX_RA_REG_BANK_SEL, ICM426XX_BANK_SELECT0);
     spi_write_byte(icm42688p_handle, ICM426XX_RA_GYRO_ACCEL_CONFIG0, ICM426XX_ACCEL_UI_FILT_BW_LOW_LATENCY | ICM426XX_GYRO_UI_FILT_BW_LOW_LATENCY);
 
+    // Bu çözüm gürültüyü çok az arttırıyor.
     // Fix for stalls in gyro output. See https://github.com/ArduPilot/ardupilot/pull/25332
     // first read the register default value. Only change bit[7:6] from 10 to 01 (reserved bits)
+
+    /*
     uint8_t value = spi_read_byte(icm42688p_handle, ICM426XX_INTF_CONFIG1);
     value &= ~ICM426XX_INTF_CONFIG1_AFSR_MASK;
     value |= ICM426XX_INTF_CONFIG1_AFSR_DISABLE;
-    spi_write_byte(icm42688p_handle, ICM426XX_INTF_CONFIG1, value);
+    spi_write_byte(icm42688p_handle, ICM426XX_INTF_CONFIG1, value); 
+    */
 
     // Turn gyro acc on
     spi_write_byte(icm42688p_handle, ICM426XX_RA_PWR_MGMT0, ICM426XX_PWR_MGMT0_TEMP_DISABLE_OFF | ICM426XX_PWR_MGMT0_ACCEL_MODE_LN | ICM426XX_PWR_MGMT0_GYRO_MODE_LN);
-    vTaskDelay(20 / portTICK_PERIOD_MS);
+    vTaskDelay(20);
     spi_write_byte(icm42688p_handle, GYRO_CONFIG0, GY_FS_2000 | GY_ODR_1KHZ);
-    vTaskDelay(20 / portTICK_PERIOD_MS);
+    vTaskDelay(20);
     spi_write_byte(icm42688p_handle, ACCEL_CONFIG0, AC_FS_16G | AC_ODR_1KHZ);
-    vTaskDelay(20 / portTICK_PERIOD_MS);
+    vTaskDelay(20);
 }
 
 
@@ -77,8 +81,6 @@ static void parse_icm42688p_data(imu_t *imu, uint8_t *buff)
     imu->gyro_dps[X] = (int16_t)(buff[8] << 8 | buff[9]) * GYR_GAIN;
     imu->gyro_dps[Y] = (int16_t)(buff[10] << 8 | buff[11]) * GYR_GAIN;
     imu->gyro_dps[Z] = (int16_t)(buff[12] << 8 | buff[13]) * GYR_GAIN;
-
-/*     printf("%.2f\n", imu->gyro_dps[X]); */
 }
 
 static void getCalibratedResults(imu_t *imu)

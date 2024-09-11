@@ -8,8 +8,12 @@
 
 #define UART0_PIN_TX    43
 #define UART0_PIN_RX    44
+
 #define UART1_PIN_TX    47
 #define UART1_PIN_RX    48
+
+#define UART2_PIN_TX    18
+#define UART2_PIN_RX    21
 
 
 void uart_begin(uart_port_t port, int baud_rate, uint8_t tx_pin, uint8_t rx_pin, uart_parity_t parity);

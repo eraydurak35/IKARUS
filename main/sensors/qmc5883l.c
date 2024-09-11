@@ -1,7 +1,8 @@
 #include <stdio.h>
-#include "qmc5883l.h"
-#include "i2c.h"
+#include "sensors/qmc5883l.h"
+#include "comminication/i2c.h"
 #include "typedefs.h"
+#include "esp_log.h"
 
 static calibration_t *mag_calib_data = NULL;
 
@@ -15,19 +16,19 @@ uint8_t qmc5883l_setup(calibration_t *mg_cal)
     uint8_t ret = i2c_read_byte(I2C_NUM_0, QMC5883L_ADDR ,QMC5883L_WHO_AM_I_REG);
     if (ret != QMC5883L_WHO_AM_I_RET)
     {
-        printf("QMC5883L WHO_AM_I Failed!!\n");
+        ESP_LOGE("Magnetometer", "QMC5883L WHO_AM_I Failed!!");
         return 1;
     }
 
     mag_calib_data = mg_cal;
 
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(10);
     i2c_write_byte(I2C_NUM_0, QMC5883L_ADDR, SET_RESET_REG, 0x01);
 
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(10);
     i2c_write_byte(I2C_NUM_0, QMC5883L_ADDR, 0x0A, 0x41);
 
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(10);
     i2c_write_byte(I2C_NUM_0, QMC5883L_ADDR, CTRL_REG_1, MODE_CONTINUOUS | ODR_50_HZ | OSR_512 | SCALE_8_GAUSS);
 
     return 0;

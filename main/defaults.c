@@ -1,5 +1,8 @@
 #include "defaults.h"
 #include "typedefs.h"
+#include "esp_log.h"
+
+static const char *TAG = "Defaults";
 
 void load_default_config(config_t *cfg)
 {
@@ -34,5 +37,5 @@ void load_default_config(config_t *cfg)
     cfg->ahrs_filt_zeta = DFLT_AHRS_FILTER_ZETA;
     cfg->alt_vel_scale = DFLT_ALT_VEL_SCALE;
 
-    printf("Default Config Loaded...\n");
+    ESP_LOGI(TAG, "Default Config Loaded...");
 }

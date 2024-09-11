@@ -15,7 +15,6 @@ static target_t *target_p;
 static states_t *state_p;
 static telemetry_small_integer_t *telemetry_p;
 static config_t *config_p;
-
 static biquad_lpf_t lpf_pitch_d_term;
 static biquad_lpf_t lpf_roll_d_term;
 
@@ -65,6 +64,8 @@ static void outer_control_loop(float dt);
 static void inner_control_loop();
 static void arm();
 static void disarm();
+static uint8_t check_for_extreme_angle();
+static void small_drone_check_flight_mode();
 
 void small_drone_control_init(radio_control_t *rad, telemetry_small_integer_t *telemetry, flight_t *flight, target_t *target, states_t *state, config_t *config)
 {
@@ -80,10 +81,12 @@ void small_drone_control_init(radio_control_t *rad, telemetry_small_integer_t *t
 }
 
 
-void small_drone_check_flight_mode()
+static void small_drone_check_flight_mode()
 {
     if (radio_ptr->channel[RC_YAW_CH] > 108 && radio_ptr->channel[RC_THROTTLE_CH] < -108 && !flight_p->arm_status && telemetry_p->rssi < 0) arm();
     else if ((radio_ptr->channel[RC_YAW_CH] < -108 && radio_ptr->channel[RC_THROTTLE_CH] < -108 && flight_p->arm_status) || telemetry_p->rssi == 0) disarm();
+
+    if (flip_status == 0 && check_for_extreme_angle()) disarm();
 
     if (radio_ptr->channel[RC_CH_5] == 1 && telemetry_p->is_headless_on == 0) telemetry_p->is_headless_on = 1;
     else if (radio_ptr->channel[RC_CH_5] == 0 && telemetry_p->is_headless_on == 1) telemetry_p->is_headless_on = 0;
@@ -150,13 +153,21 @@ static void arm()
 static void disarm()
 {
     set_throttle_quadcopter(0, 0, 0, 0);
-    //telemetry_p->arm_status = 0;
     flight_p->arm_status = 0;
+}
+
+
+static uint8_t check_for_extreme_angle()
+{
+    if (fabs(state_p->pitch_deg) > 45 || fabs(state_p->roll_deg) > 45) return 1;
+    return 0;
 }
 
 
 void small_drone_flight_control()
 {
+    small_drone_check_flight_mode();
+    
     static int64_t t = 0; 
     float dt = ((esp_timer_get_time() - t)) / 1000000.0f;
     t = esp_timer_get_time();
@@ -525,8 +536,13 @@ static void inner_control_loop()
     //if (battery_compans_throttle < 0.0f) battery_compans_throttle = 0.0f;
     //comp_target_thr += battery_compans_throttle;
 
-    //float cosAngAbs = cosf(fabs(state_p->pitch_deg) * DEG_TO_RAD) * cosf(fabs(state_p->roll_deg) * DEG_TO_RAD);
-    //if (cosAngAbs != 0) comp_target_thr += ((1.0f / cosAngAbs) - 1.0f) * comp_target_thr;
+    // Eğer takla atılmıyorsa
+    if (flip_status == 0)
+    {
+        // Eğim telafisi throttle değerini hesapla ve hedef throttle değeri üzerine bu değeri ekle
+        float cosAngAbs = cosf(fabs(state_p->pitch_deg) * DEG_TO_RAD) * cosf(fabs(state_p->roll_deg) * DEG_TO_RAD);
+        if (cosAngAbs != 0) comp_target_thr += ((1.0f / cosAngAbs) - 1.0f) * comp_target_thr;
+    }
 
     //↓↓↓↓↓↓↓↓↓↓   MOTOR 1 (LEFT BOTTOM)   ↓↓↓↓↓↓↓↓↓↓
     thr_m1 = comp_target_thr - pid.pitchPIDout + pid.rollPIDout + pid.yawPIout;
