@@ -40,7 +40,7 @@ void gnss_init()
 
     #if SETUP_GNSS_TYPE == GNSS_UBX_M8
 
-    uart_begin(UART_NUM_0, 9600, UART0_PIN_TX, UART0_PIN_RX, UART_PARITY_DISABLE);
+    uart_begin(UART_NUM_0, 9600, SETUP_UART_0_TX_PIN, SETUP_UART_0_RX_PIN, UART_PARITY_DISABLE);
     vTaskDelay(500);
 
     uart_write(UART_NUM_0, set_to_921600_baud, sizeof(set_to_921600_baud));
@@ -65,7 +65,7 @@ void gnss_init()
 
     #elif SETUP_GNSS_TYPE == GNSS_UBX_M10
 
-    uart_begin(UART_NUM_0, 38400, UART0_PIN_TX, UART0_PIN_RX, UART_PARITY_DISABLE);
+    uart_begin(UART_NUM_0, 38400, SETUP_UART_0_TX_PIN, SETUP_UART_0_RX_PIN, UART_PARITY_DISABLE);
     vTaskDelay(1000);
 
     uart_write(UART_NUM_0, set_baudrate_115200, sizeof(set_baudrate_115200));

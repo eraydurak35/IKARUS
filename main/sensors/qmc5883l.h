@@ -32,7 +32,7 @@
 
 
 uint8_t qmc5883l_setup(calibration_t *mg_cal);
-void qmc5883l_read(magnetometer_t *qmc, uint16_t throttle);
+void qmc5883l_read(magnetometer_t *mag, uint16_t throttle);
 
 
 #endif

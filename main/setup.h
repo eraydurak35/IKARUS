@@ -1,6 +1,9 @@
 #ifndef SETUP_H
 #define SETUP_H
 
+#define POSITIVE                   1.0f
+#define NEGATIVE                  -1.0f
+
 #define RC_RANGE_MIN               900
 #define RC_RANGE_MAX               2100
 
@@ -48,20 +51,90 @@
 // Motor sinyali seçenekleri
 #define MOTOR_CORELESS             1
 #define MOTOR_BRUSHLESS_PWM        2
-#define MOTOR_BRUSHLESS_DSHOT300   3
-#define MOTOR_BRUSHLESS_DSHOT600   4            
+#define MOTOR_BRUSHLESS_DSHOT150   3
+#define MOTOR_BRUSHLESS_DSHOT300   4
+#define MOTOR_BRUSHLESS_DSHOT600   5
 
 //----------------------------------------------------------//
 //                  DONANIM KONFIGÜRASYONU                  //
 //----------------------------------------------------------//
-#define SETUP_BLACKBOX            (false)
-#define SETUP_MAGNETO_TYPE        (MAG_NONE)
-#define SETUP_CRAFT_TYPE          (CRAFT_TYPE_QUADCOPTER)
-#define SETUP_COMM_TYPE           (USE_WEBCOMM)
-#define SETUP_MOTOR_TYPE          (MOTOR_CORELESS)    // Eğer SETUP_CRAFT_TYPE --> CRAFT_TYPE_PLANE ise SETUP_MOTOR_TYPE ayardan bağımsız olarak MOTOR_BRUSHLESS_PWM olacaktır
-#define SETUP_GNSS_TYPE           (GNSS_NONE)
-#define SETUP_OPT_FLOW_TYPE       (OPT_FLOW_NONE)
-#define SETUP_LIDAR_TYPE          (LIDAR_NONE)
+#define SETUP_USE_BLACKBOX        (false)                   // "true" --> "ARM" kayıt başlar, "DISARM" kayıt durur. "false" --> devre dışı bırakır.
+#define SETUP_MAGNETO_TYPE        (MAG_QMC5883L)            // Manyetik sensör seçimi.
+#define SETUP_CRAFT_TYPE          (CRAFT_TYPE_QUADCOPTER)   // Araç tipi seçimi
+#define SETUP_COMM_TYPE           (USE_RC_LINK)             // Kontrol methodu seçimi
+#define SETUP_MOTOR_TYPE          (MOTOR_BRUSHLESS_DSHOT300)          // Motor kontrol sinyali türü seçimi
+#define SETUP_GNSS_TYPE           (GNSS_UBX_M10)               // GNSS alıcı seçimi
+#define SETUP_OPT_FLOW_TYPE       (OPT_FLOW_PMW3901)           // Optik akış sensörü seçimi
+#define SETUP_LIDAR_TYPE          (LIDAR_TF_LUNA)              // LIDAR sensör türü seçimi
+
+//---- UART PIN KONFIGURASYONU ----//
+#define SETUP_UART_0_TX_PIN       (43) // Değiştirilemez.
+#define SETUP_UART_0_RX_PIN       (44) // Değiştirilemez.
+
+#define SETUP_UART_1_TX_PIN       (47) // Değiştirilebilir.
+#define SETUP_UART_1_RX_PIN       (48) // Değiştirilebilir.
+
+#define SETUP_UART_2_TX_PIN       (18) // Değiştirilebilir.
+#define SETUP_UART_2_RX_PIN       (21) // Değiştirilebilir.
+
+//---- SPI PIN KONFIGURASYONU ----//
+#define SETUP_SPI_2_CLK_PIN       (13) // Değiştirilemez.
+#define SETUP_SPI_2_MISO_PIN      (11) // Değiştirilemez.
+#define SETUP_SPI_2_MOSI_PIN      (10) // Değiştirilemez.
+#define SETUP_ICM42688P_CS_PIN    (12) // Değiştirilemez.
+#define SETUP_BMP390_CS_PIN       (14) // Değiştirilemez.
+
+//---- I2C PIN KONFIGURASYONU ----//
+#define SETUP_I2C_0_SDA_PIN       (8) // Değiştirilebilir. Pull up direci bağlıdır.
+#define SETUP_I2C_0_SCL_PIN       (9) // Değiştirilebilir. Pull up direci bağlıdır.
+
+//---- MOTOR PIN KONFIGURASYONU ----//
+#define SETUP_S1_PIN              (16) // Değiştirilebilir. Fırçalı motor sürücü bu pine bağlıdır.
+#define SETUP_S2_PIN              (4)  // Değiştirilebilir. Fırçalı motor sürücü bu pine bağlıdır.
+#define SETUP_S3_PIN              (38) // Değiştirilebilir. Fırçalı motor sürücü bu pine bağlıdır.
+#define SETUP_S4_PIN              (1)  // Değiştirilebilir. Fırçalı motor sürücü bu pine bağlıdır.
+
+//---- DIGER PINLER ----//
+#define SETUP_LED_PIN             (2) // Değiştirilebilir.
+#define SETUP_BUTTON_PIN          (0) // Değiştirilemez.
+#define SETUP_VSENS_PIN           (6) // Değiştirilebilir. (Pin 1-10 dahil, arası kullanılabilir.)
+
+
+
+//----------------------------------------------------------//
+//                SENSOR EKSEN HIZALANMALARI                //
+//----------------------------------------------------------//
+
+//---- MANYETIK SENSOR EKSEN HIZALANMASI ----//
+#define ALIGNED_MAG_X_AXIS        (Y)        // Varsayılan "X"
+#define ALIGNED_MAG_Y_AXIS        (X)        // Varsayılan "Y"
+#define ALIGNED_MAG_Z_AXIS        (Z)        // Varsayılan "Z"
+
+#define ALIGNED_MAG_X_AXIS_SIGN   (POSITIVE) // Varsayılan "POSITIVE"
+#define ALIGNED_MAG_Y_AXIS_SIGN   (NEGATIVE) // Varsayılan "NEGATIVE"
+#define ALIGNED_MAG_Z_AXIS_SIGN   (NEGATIVE) // Varsayılan "POSITIVE"
+
+//----- IVME SENSORU EKSEN HIZALANMASI -----//
+#define ALIGNED_ACC_X_AXIS        (Y)        // Varsayılan "Y"
+#define ALIGNED_ACC_Y_AXIS        (X)        // Varsayılan "X"
+#define ALIGNED_ACC_Z_AXIS        (Z)        // Varsayılan "Z"
+
+#define ALIGNED_ACC_X_AXIS_SIGN   (POSITIVE) // Varsayılan "POSITIVE"
+#define ALIGNED_ACC_Y_AXIS_SIGN   (POSITIVE) // Varsayılan "POSITIVE"
+#define ALIGNED_ACC_Z_AXIS_SIGN   (NEGATIVE) // Varsayılan "NEGATIVE"
+
+//---- JIROSKOP SENSOR EKSEN HIZALANMASI ----//
+#define ALIGNED_GYR_X_AXIS        (Y)        // Varsayılan "Y"
+#define ALIGNED_GYR_Y_AXIS        (X)        // Varsayılan "X"
+#define ALIGNED_GYR_Z_AXIS        (Z)        // Varsayılan "Z"
+
+#define ALIGNED_GYR_X_AXIS_SIGN   (POSITIVE) // Varsayılan "POSITIVE"
+#define ALIGNED_GYR_Y_AXIS_SIGN   (POSITIVE) // Varsayılan "POSITIVE"
+#define ALIGNED_GYR_Z_AXIS_SIGN   (NEGATIVE) // Varsayılan "NEGATIVE"
+
+
+#define SETUP_MAIN_LOOP_FREQ_HZ   (1000.0f)
+
 
 //----------------------------------------------------------//
 //          RADYO ALICI İŞLEV VE KANAL ATAMALARI            //

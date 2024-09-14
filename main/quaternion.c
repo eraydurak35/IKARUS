@@ -185,15 +185,15 @@ quat_t get_quat_product(quat_t *q1, quat_t *q2)
 void get_quat_from_vector_measurements(vector3_t *vec_acc,vector3_t *vec_mag, quat_t *q_result)
 {
     float pitch_radian = (asinf(vec_acc->y / sqrtf(vec_acc->x * vec_acc->x + vec_acc->y * vec_acc->y + vec_acc->z * vec_acc->z)));
-    float roll_radian = -atan2f(vec_acc->x , vec_acc->z);
+    float roll_radian = -atan2f(vec_acc->x , -vec_acc->z);
 
     float cos_pitch = cosf(pitch_radian);
     float cos_roll = cosf(-roll_radian);
     float sin_roll = sinf(-roll_radian);
     float sin_pitch = sinf(pitch_radian);
 
-    float _X = -vec_mag->y * cos_pitch - vec_mag->x * sin_roll * sin_pitch + vec_mag->z * cos_roll * sin_pitch;
-    float _Y = -vec_mag->x * cos_roll - vec_mag->z * sin_roll;
+    float _X = -vec_mag->x * cos_pitch - (-vec_mag->y) * sin_roll * sin_pitch + (-vec_mag->z) * cos_roll * sin_pitch;
+    float _Y = vec_mag->y * cos_roll - (-vec_mag->z) * sin_roll;
     float heading_radian = atan2f(_Y, _X) + M_PI;
 
     q_result->w = cosf(roll_radian / 2.0f) * cosf(pitch_radian / 2.0f) * cosf(heading_radian / 2.0f) + sinf(roll_radian / 2.0f) * sinf(pitch_radian / 2.0f) * sinf(heading_radian / 2.0f);
@@ -214,8 +214,8 @@ void set_heading_quat(float pitch_deg, float roll_deg, vector3_t *vec_mag, quat_
     float sin_roll = sinf(-roll_radian);
     float sin_pitch = sinf(pitch_radian);
 
-    float _X = -vec_mag->y * cos_pitch - vec_mag->x * sin_roll * sin_pitch + vec_mag->z * cos_roll * sin_pitch;
-    float _Y = -vec_mag->x * cos_roll - vec_mag->z * sin_roll;
+    float _X = -vec_mag->x * cos_pitch - (-vec_mag->y) * sin_roll * sin_pitch + (-vec_mag->z) * cos_roll * sin_pitch;
+    float _Y = vec_mag->y * cos_roll - (-vec_mag->z) * sin_roll;
     float heading_radian = atan2f(_Y, _X) + M_PI;
 
     q_result->w = cosf(roll_radian / 2.0f) * cosf(pitch_radian / 2.0f) * cosf(heading_radian / 2.0f) + sinf(roll_radian / 2.0f) * sinf(pitch_radian / 2.0f) * sinf(heading_radian / 2.0f);

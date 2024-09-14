@@ -6,6 +6,7 @@
 #include "driver/spi_master.h"
 #include "esp_timer.h"
 #include "typedefs.h"
+#include "setup.h"
 
 static bmp390_calib_t calib;
 static spi_device_handle_t bmp390_handle;
@@ -39,7 +40,7 @@ void bmp390_setup_i2c()
 void bmp390_setup_spi()
 {
 
-    spi_add_device_to_bus(&bmp390_handle, BMP390_CS_PIN, SPI_FREQ);
+    spi_add_device_to_bus(&bmp390_handle, SETUP_BMP390_CS_PIN, SPI_FREQ);
 
     uint8_t buff[22] = {0};
     vTaskDelay(100);
@@ -162,9 +163,9 @@ void baro_set_ground_pressure(bmp390_t *baro)
     float press_accumulator = 0;
     for (uint8_t i = 0; i < 20; i++)
     {
+        vTaskDelay(20);
         bmp390_read_spi(baro);
         press_accumulator += baro->press;
-        vTaskDelay(20);
     }
     baro->gnd_press = press_accumulator / 20.0;
 }

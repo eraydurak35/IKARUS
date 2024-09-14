@@ -192,188 +192,176 @@ static void outer_control_loop(float dt)
         flip_up_velocity_integrator += state_p->acc_up_ms2 * dt;
     }
 
-    static uint8_t counter = 0;
-    static float inner_dt = 0;
-    inner_dt += dt;
-    counter++;
-
-    if (counter >= 10) // 100Hz
+    if (telemetry_p->is_flip_on == 1 && flip_status == 0)
     {
-        counter = 0;
-
-        if (telemetry_p->is_flip_on == 1 && flip_status == 0)
-        {
-            if ((radio_ptr->channel[RC_ROLL_CH] > 110 || radio_ptr->channel[RC_ROLL_CH] < -110) || (radio_ptr->channel[RC_PITCH_CH] > 110 || radio_ptr->channel[RC_PITCH_CH] < -110))
-            {
-
-                if (radio_ptr->channel[RC_ROLL_CH] > 110)
-                {
-                    flip_vec.pitch = 0.0f;
-                    flip_vec.roll = 380.0f;
-                }
-                else if (radio_ptr->channel[RC_ROLL_CH] < -110)
-                {
-                    flip_vec.pitch = 0.0f;
-                    flip_vec.roll = -380.0f;
-                }
-                else if (radio_ptr->channel[RC_PITCH_CH] > 110)
-                {
-                    flip_vec.pitch = -380.0f;
-                    flip_vec.roll = 0.0f;
-                }
-                else if (radio_ptr->channel[RC_PITCH_CH] < -110)
-                {
-                    flip_vec.pitch = 380.0f;
-                    flip_vec.roll = 0.0f;
-                }
-
-                flip_up_velocity_integrator = 0;
-                pitch_flip_integrator_deg = 0;
-                roll_flip_integrator_deg = 0;
-                flip_status = 1;
-            }
-        }
-        
-
-        if (flip_status == 1)
-        {
-            target_p->pitch_dps = 0;
-            target_p->roll_dps = 0;
-            target_p->throttle = 900.0f;
-            if (flip_up_velocity_integrator > 1.7f)
-            {
-                flip_status = 2;
-            }
-        }
-
-        else if (flip_status == 2)
-        {
-            target_p->throttle = IDLE_THROTTLE;
-            roll_flip_integrator_deg += state_p->roll_dps * inner_dt;
-            pitch_flip_integrator_deg += state_p->pitch_dps * inner_dt;
-
-
-            target_p->roll_dps = (flip_vec.roll - roll_flip_integrator_deg) * 10.0f;
-            if (target_p->roll_dps > 700.0f) target_p->roll_dps = 700.0f;
-            else if (target_p->roll_dps < -700.0f) target_p->roll_dps = -700.0f;
-
-
-            target_p->pitch_dps = (flip_vec.pitch - pitch_flip_integrator_deg) * 10.0f;
-            if (target_p->pitch_dps > 700.0f) target_p->pitch_dps = 700.0f;
-            else if (target_p->pitch_dps < -700.0f) target_p->pitch_dps = -700.0f;
-
-            float vec_len = sqrtf((pitch_flip_integrator_deg * pitch_flip_integrator_deg) + (roll_flip_integrator_deg * roll_flip_integrator_deg));
-            if (vec_len >= 365.0f)
-            {
-                flip_status = 3;
-            }
-        }
-        else if (flip_status == 3)
-        {
-            target_p->throttle = 900.0f;
-
-            if (flip_up_velocity_integrator >= 0.2f)
-            {
-                telemetry_p->is_flip_on = 0;
-                flip_status = 0;
-            }
-        }
-
-        if (flip_status == 0 || flip_status == 3) // flip is not ongoing
+        if ((radio_ptr->channel[RC_ROLL_CH] > 110 || radio_ptr->channel[RC_ROLL_CH] < -110) || (radio_ptr->channel[RC_PITCH_CH] > 110 || radio_ptr->channel[RC_PITCH_CH] < -110))
         {
 
-            target_p->pitch_deg = -radio_ptr->channel[RC_PITCH_CH] * (config_p->max_pitch_angle / 120.0f);
-            target_p->roll_deg = radio_ptr->channel[RC_ROLL_CH] * (config_p->max_roll_angle / 120.0f);
-
-            if (telemetry_p->is_headless_on == 1.0f)
+            if (radio_ptr->channel[RC_ROLL_CH] > 110)
             {
-                float head_diff = (state_p->heading_deg - arm_heading) * DEG_TO_RAD;
-                float temp_pitch = target_p->pitch_deg;
-                float temp_roll = target_p->roll_deg;
-                target_p->pitch_deg = temp_pitch * cosf(head_diff) - temp_roll * sinf(head_diff);
-                target_p->roll_deg = temp_pitch * sinf(head_diff) + temp_roll * cosf(head_diff);
+                flip_vec.pitch = 0.0f;
+                flip_vec.roll = 380.0f;
             }
-        }
+            else if (radio_ptr->channel[RC_ROLL_CH] < -110)
+            {
+                flip_vec.pitch = 0.0f;
+                flip_vec.roll = -380.0f;
+            }
+            else if (radio_ptr->channel[RC_PITCH_CH] > 110)
+            {
+                flip_vec.pitch = -380.0f;
+                flip_vec.roll = 0.0f;
+            }
+            else if (radio_ptr->channel[RC_PITCH_CH] < -110)
+            {
+                flip_vec.pitch = 380.0f;
+                flip_vec.roll = 0.0f;
+            }
 
-        if (flip_status == 0 || flip_status == 3)
+            flip_up_velocity_integrator = 0;
+            pitch_flip_integrator_deg = 0;
+            roll_flip_integrator_deg = 0;
+            flip_status = 1;
+        }
+    }
+    
+
+    if (flip_status == 1)
+    {
+        target_p->pitch_dps = 0;
+        target_p->roll_dps = 0;
+        target_p->throttle = 900.0f;
+        if (flip_up_velocity_integrator > 1.7f)
         {
-            /////////////////////   Pitch Rate Controller   ///////////////////////
-            target_p->pitch_dps = (target_p->pitch_deg - state_p->pitch_deg) * config_p->pitch_rate_scal;
-            if (target_p->pitch_dps > config_p->max_pitch_rate) target_p->pitch_dps = config_p->max_pitch_rate;
-            else if (target_p->pitch_dps < -config_p->max_pitch_rate) target_p->pitch_dps = -config_p->max_pitch_rate;
-
-            /////////////////////   Roll Rate Controller   ///////////////////////
-            target_p->roll_dps = (target_p->roll_deg - state_p->roll_deg) * config_p->roll_rate_scal;
-            if (target_p->roll_dps > config_p->max_roll_rate) target_p->roll_dps = config_p->max_roll_rate;
-            else if (target_p->roll_dps < -config_p->max_roll_rate) target_p->roll_dps = -config_p->max_roll_rate;
-
-
-            /////////////////////   Yaw Rate Controller   ///////////////////////
-            // Yaw stick controls yaw rate
-            //if ((radio_ptr->channel[RC_YAW_CH] < 250 && radio_ptr->channel[RC_YAW_CH] > -250) || radio_ptr->channel[RC_THROTTLE_CH] < -700) // Yaw stick is centered
-            if ((radio_ptr->channel[RC_YAW_CH] < 30 && radio_ptr->channel[RC_YAW_CH] > -30) || radio_ptr->channel[RC_THROTTLE_CH] < -90) // Yaw stick is centered
-            {
-                // Calculate yaw rate from setpoint error
-                target_p->yaw_dps = (target_p->heading_deg - state_p->heading_deg) * config_p->yaw_rate_scale;
-
-                // This part ensures the craft turns from closest side to setpoint
-                // Say the setpoint is 5 deg and craft is at 270, logical thing is craft turns clockwise 95 deg
-                // If we dont do this craft will attempt to turn counter clockwise 265deg
-                if (target_p->yaw_dps < -180.0 * config_p->yaw_rate_scale) target_p->yaw_dps += 360.0 * config_p->yaw_rate_scale;
-                else if (target_p->yaw_dps > 180.0 * config_p->yaw_rate_scale) target_p->yaw_dps -= 360.0 * config_p->yaw_rate_scale;
-            }
-            else // Yaw stick is not centered
-            {
-                /* target_p->yaw_dps = (radio_ptr->channel[RC_YAW_CH] / 1000.0f) * config_p->max_yaw_rate; */
-                target_p->yaw_dps = (radio_ptr->channel[RC_YAW_CH] / 120.0f) * config_p->max_yaw_rate;
-                target_p->heading_deg = state_p->heading_deg;
-            }
-            // Just limit the yaw rate so it doesnt go nuts
-            if (target_p->yaw_dps > config_p->max_yaw_rate) target_p->yaw_dps = config_p->max_yaw_rate;
-            else if (target_p->yaw_dps < -config_p->max_yaw_rate) target_p->yaw_dps = -config_p->max_yaw_rate;
+            flip_status = 2;
         }
-        else
-        {
-            target_p->yaw_dps = 0;
-        }
-
-
-        if (telemetry_p->is_alt_hold_on == 1)
-        {
-            ////////////////////////    Altitude Velocity Controller    /////////////////////////////////
-            // Throttle controls the altitude velocity
-            if (radio_ptr->channel[RC_THROTTLE_CH] < 30 && radio_ptr->channel[RC_THROTTLE_CH] > -30) // Throttle stick is centered, velocity calculated from setpoint error
-            {
-                // Target velocity is calculated from dividing the difference between set altitude and actual altitude with a constant value
-                // we always aim 0.1m higher to make sure target is always reached
-                target_p->velocity_z_ms = (target_p->altitude - state_p->altitude_m) * config_p->alt_vel_scale;
-                //target.velocity_z_ms = applyDeadband(target.velocity_z_ms, 0.05);
-            }
-            else // Throttle stick not centered, velocity calculated from stick input
-            {
-                // Calculate the desired altitude velocity from raw stick input
-                target_p->velocity_z_ms = (radio_ptr->channel[RC_THROTTLE_CH] / 120.0f) * config_p->max_vert_vel;
-                // we dont use altitude setpoint if the stick is not centered
-                // but we want to set our setpoint when the stick is in middle
-                // so that when we let go of the stick, craft stays at the altitude we let go
-                target_p->altitude = state_p->altitude_m;
-            }
-        }
-        else
-        {
-            if (flip_status == 0)
-            {
-                // I added some throttle curve
-                //target_p->throttle += pow((radio_ptr->channel[RC_THROTTLE_CH] / 1000.0f), 3) * 1.25f;
-                target_p->throttle = applyExpo((radio_ptr->channel[RC_THROTTLE_CH] + 120) / 2) * 5.0f;
-                if (target_p->throttle > MAX_TARGET_THROTTLE) target_p->throttle = MAX_TARGET_THROTTLE;
-                else if (target_p->throttle < IDLE_THROTTLE) target_p->throttle = IDLE_THROTTLE;
-            }
-
-        }
-        inner_dt = 0;
     }
 
+    else if (flip_status == 2)
+    {
+        target_p->throttle = IDLE_THROTTLE;
+        roll_flip_integrator_deg += state_p->roll_dps * dt;
+        pitch_flip_integrator_deg += state_p->pitch_dps * dt;
+
+
+        target_p->roll_dps = (flip_vec.roll - roll_flip_integrator_deg) * 10.0f;
+        if (target_p->roll_dps > 700.0f) target_p->roll_dps = 700.0f;
+        else if (target_p->roll_dps < -700.0f) target_p->roll_dps = -700.0f;
+
+
+        target_p->pitch_dps = (flip_vec.pitch - pitch_flip_integrator_deg) * 10.0f;
+        if (target_p->pitch_dps > 700.0f) target_p->pitch_dps = 700.0f;
+        else if (target_p->pitch_dps < -700.0f) target_p->pitch_dps = -700.0f;
+
+        float vec_len = sqrtf((pitch_flip_integrator_deg * pitch_flip_integrator_deg) + (roll_flip_integrator_deg * roll_flip_integrator_deg));
+        if (vec_len >= 355.0f)
+        {
+            flip_status = 3;
+        }
+    }
+    else if (flip_status == 3)
+    {
+        target_p->throttle = 900.0f;
+
+        if (flip_up_velocity_integrator >= 0.2f)
+        {
+            telemetry_p->is_flip_on = 0;
+            flip_status = 0;
+        }
+    }
+
+    if (flip_status == 0 || flip_status == 3) // flip is not ongoing
+    {
+
+        target_p->pitch_deg = -radio_ptr->channel[RC_PITCH_CH] * (config_p->max_pitch_angle / 120.0f);
+        target_p->roll_deg = radio_ptr->channel[RC_ROLL_CH] * (config_p->max_roll_angle / 120.0f);
+
+        if (telemetry_p->is_headless_on == 1.0f)
+        {
+            float head_diff = (state_p->heading_deg - arm_heading) * DEG_TO_RAD;
+            float temp_pitch = target_p->pitch_deg;
+            float temp_roll = target_p->roll_deg;
+            target_p->pitch_deg = temp_pitch * cosf(head_diff) - temp_roll * sinf(head_diff);
+            target_p->roll_deg = temp_pitch * sinf(head_diff) + temp_roll * cosf(head_diff);
+        }
+    }
+
+    if (flip_status == 0 || flip_status == 3)
+    {
+        /////////////////////   Pitch Rate Controller   ///////////////////////
+        target_p->pitch_dps = (target_p->pitch_deg - state_p->pitch_deg) * config_p->pitch_rate_scal;
+        if (target_p->pitch_dps > config_p->max_pitch_rate) target_p->pitch_dps = config_p->max_pitch_rate;
+        else if (target_p->pitch_dps < -config_p->max_pitch_rate) target_p->pitch_dps = -config_p->max_pitch_rate;
+
+        /////////////////////   Roll Rate Controller   ///////////////////////
+        target_p->roll_dps = (target_p->roll_deg - state_p->roll_deg) * config_p->roll_rate_scal;
+        if (target_p->roll_dps > config_p->max_roll_rate) target_p->roll_dps = config_p->max_roll_rate;
+        else if (target_p->roll_dps < -config_p->max_roll_rate) target_p->roll_dps = -config_p->max_roll_rate;
+
+
+        /////////////////////   Yaw Rate Controller   ///////////////////////
+        // Yaw stick controls yaw rate
+        //if ((radio_ptr->channel[RC_YAW_CH] < 250 && radio_ptr->channel[RC_YAW_CH] > -250) || radio_ptr->channel[RC_THROTTLE_CH] < -700) // Yaw stick is centered
+        if ((radio_ptr->channel[RC_YAW_CH] < 30 && radio_ptr->channel[RC_YAW_CH] > -30) || radio_ptr->channel[RC_THROTTLE_CH] < -90) // Yaw stick is centered
+        {
+            // Calculate yaw rate from setpoint error
+            target_p->yaw_dps = (target_p->heading_deg - state_p->heading_deg) * config_p->yaw_rate_scale;
+
+            // This part ensures the craft turns from closest side to setpoint
+            // Say the setpoint is 5 deg and craft is at 270, logical thing is craft turns clockwise 95 deg
+            // If we dont do this craft will attempt to turn counter clockwise 265deg
+            if (target_p->yaw_dps < -180.0 * config_p->yaw_rate_scale) target_p->yaw_dps += 360.0 * config_p->yaw_rate_scale;
+            else if (target_p->yaw_dps > 180.0 * config_p->yaw_rate_scale) target_p->yaw_dps -= 360.0 * config_p->yaw_rate_scale;
+        }
+        else // Yaw stick is not centered
+        {
+            /* target_p->yaw_dps = (radio_ptr->channel[RC_YAW_CH] / 1000.0f) * config_p->max_yaw_rate; */
+            target_p->yaw_dps = (radio_ptr->channel[RC_YAW_CH] / 120.0f) * config_p->max_yaw_rate;
+            target_p->heading_deg = state_p->heading_deg;
+        }
+        // Just limit the yaw rate so it doesnt go nuts
+        if (target_p->yaw_dps > config_p->max_yaw_rate) target_p->yaw_dps = config_p->max_yaw_rate;
+        else if (target_p->yaw_dps < -config_p->max_yaw_rate) target_p->yaw_dps = -config_p->max_yaw_rate;
+    }
+    else
+    {
+        target_p->yaw_dps = 0;
+    }
+
+
+    if (telemetry_p->is_alt_hold_on == 1)
+    {
+        ////////////////////////    Altitude Velocity Controller    /////////////////////////////////
+        // Throttle controls the altitude velocity
+        if (radio_ptr->channel[RC_THROTTLE_CH] < 30 && radio_ptr->channel[RC_THROTTLE_CH] > -30) // Throttle stick is centered, velocity calculated from setpoint error
+        {
+            // Target velocity is calculated from dividing the difference between set altitude and actual altitude with a constant value
+            // we always aim 0.1m higher to make sure target is always reached
+            target_p->velocity_z_ms = (target_p->altitude - state_p->altitude_m) * config_p->alt_vel_scale;
+            //target.velocity_z_ms = applyDeadband(target.velocity_z_ms, 0.05);
+        }
+        else // Throttle stick not centered, velocity calculated from stick input
+        {
+            // Calculate the desired altitude velocity from raw stick input
+            target_p->velocity_z_ms = (radio_ptr->channel[RC_THROTTLE_CH] / 120.0f) * config_p->max_vert_vel;
+            // we dont use altitude setpoint if the stick is not centered
+            // but we want to set our setpoint when the stick is in middle
+            // so that when we let go of the stick, craft stays at the altitude we let go
+            target_p->altitude = state_p->altitude_m;
+        }
+    }
+    else
+    {
+        if (flip_status == 0)
+        {
+            // I added some throttle curve
+            //target_p->throttle += pow((radio_ptr->channel[RC_THROTTLE_CH] / 1000.0f), 3) * 1.25f;
+            target_p->throttle = applyExpo((radio_ptr->channel[RC_THROTTLE_CH] + 120) / 2) * 5.0f;
+            if (target_p->throttle > MAX_TARGET_THROTTLE) target_p->throttle = MAX_TARGET_THROTTLE;
+            else if (target_p->throttle < IDLE_THROTTLE) target_p->throttle = IDLE_THROTTLE;
+        }
+
+    }
 }
 
 static void inner_control_loop()

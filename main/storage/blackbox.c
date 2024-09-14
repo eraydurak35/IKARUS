@@ -22,6 +22,10 @@ typedef struct
     float gyro_x_dps;
     float gyro_y_dps;
     float gyro_z_dps;
+
+    float acc_x_dps;
+    float acc_y_dps;
+    float acc_z_dps;
 } blackbox_t;
 
 static blackbox_t blackbox;
@@ -185,6 +189,10 @@ static void write_data_to_bin_file()
         blackbox.gyro_x_dps = imu_ptr->gyro_dps[X];
         blackbox.gyro_y_dps = imu_ptr->gyro_dps[Y];
         blackbox.gyro_z_dps = imu_ptr->gyro_dps[Z];
+        
+        blackbox.acc_x_dps = imu_ptr->accel_ms2[X];
+        blackbox.acc_y_dps = imu_ptr->accel_ms2[Y];
+        blackbox.acc_z_dps = imu_ptr->accel_ms2[Z];
         fwrite(&blackbox, sizeof(blackbox_t), 1, file_handler);
     }
 }

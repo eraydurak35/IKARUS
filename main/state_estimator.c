@@ -9,19 +9,15 @@
 // DOI:10.1109/TMECH.2020.2992296
 
 static quat_t q = {1.0f, 0.0f, 0.0f, 0.0f};
-static quat_t q_dot = {0.0f, 0.0f, 0.0f, 0.0f};
-static vector3_t gyr_vec = {0.0f, 0.0f, 0.0f};
 static vector3_t acc_vec = {0.0f, 0.0f, 1.0f};
 static vector3_t mag_vec = {1.0f, 0.0f, 0.0f};
 static vector3_t err = {0.0f, 0.0f, 0.0f};
-static vector3_t local_vr_a = {0.0f, 0.0f, 0.0f};
-#if SETUP_MAGNETO_TYPE != MAG_NONE
-static vector3_t local_vr_m = {0.0f, 0.0f, 0.0f};
-#endif
 static states_t *state_ptr = NULL;
 static imu_t *imu_ptr = NULL;
 static magnetometer_t *mag_ptr = NULL;
 static bmp390_t *baro_ptr = NULL;
+static pmw3901_t *flow_ptr = NULL;
+static range_finder_t *range_ptr = NULL;
 static config_t *config_ptr = NULL;
 static flight_t *flight_ptr = NULL;
 static uint8_t movement_state = 0;
@@ -37,13 +33,12 @@ typedef struct {
 kalman_t kf;
 
 static void get_attitude_heading();
-/* static float deadband(float value, const float threshold); */
 static void kalman_init(kalman_t *kf, float initial_height, float initial_velocity, float process_noise, float measurement_noise);
 static void kalman_predict(kalman_t *kf, float measured_acceleration, float dt);
 static void kalman_update(kalman_t *kf, float measured_height);
 static uint8_t is_movement_detected();
 
-void ahrs_init(config_t *cfg, states_t *sta, imu_t *icm, magnetometer_t *hmc, bmp390_t *baro, flight_t *flt)
+void ahrs_init(config_t *cfg, states_t *sta, imu_t *icm, magnetometer_t *hmc, bmp390_t *baro, pmw3901_t *flw, range_finder_t *rng, flight_t *flt)
 {
     config_ptr = cfg;
     state_ptr = sta;
@@ -51,9 +46,11 @@ void ahrs_init(config_t *cfg, states_t *sta, imu_t *icm, magnetometer_t *hmc, bm
     mag_ptr = hmc;
     baro_ptr = baro;
     flight_ptr = flt;
+    flow_ptr = flw;
+    range_ptr = rng;
 
-    acc_vec.x = imu_ptr->accel_ms2[Y];
-    acc_vec.y = imu_ptr->accel_ms2[X];
+    acc_vec.x = imu_ptr->accel_ms2[X];
+    acc_vec.y = imu_ptr->accel_ms2[Y];
     acc_vec.z = imu_ptr->accel_ms2[Z];
 
 #if SETUP_MAGNETO_TYPE != MAG_NONE
@@ -79,9 +76,11 @@ void ahrs_predict()
 
     movement_state = is_movement_detected();
 
-    gyr_vec.x = imu_ptr->gyro_dps[Y] * DEG_TO_RAD;
-    gyr_vec.y = imu_ptr->gyro_dps[X] * DEG_TO_RAD;
-    gyr_vec.z = -imu_ptr->gyro_dps[Z] * DEG_TO_RAD;
+    static vector3_t gyr_vec = {0.0f, 0.0f, 0.0f};
+
+    gyr_vec.x = imu_ptr->gyro_dps[X] * DEG_TO_RAD;
+    gyr_vec.y = imu_ptr->gyro_dps[Y] * DEG_TO_RAD;
+    gyr_vec.z = imu_ptr->gyro_dps[Z] * DEG_TO_RAD;
 
     if (flight_ptr->arm_status == 0 && movement_state == 0)
     {
@@ -93,6 +92,8 @@ void ahrs_predict()
     gyr_vec.x -= (config_ptr->ahrs_filt_beta * err.x);
     gyr_vec.y -= (config_ptr->ahrs_filt_beta * err.y);
     gyr_vec.z -= (config_ptr->ahrs_filt_beta * err.z);
+
+    static quat_t q_dot = {0.0f, 0.0f, 0.0f, 0.0f};
 
     get_quat_deriv(&q, &gyr_vec, &q_dot);
 
@@ -108,16 +109,13 @@ void ahrs_correct()
 {
     static vector3_t err_acc = {0.0f, 0.0f, 0.0f};
 
-    acc_vec.x = imu_ptr->accel_ms2[Y];
-    acc_vec.y = imu_ptr->accel_ms2[X];
-    acc_vec.z = -imu_ptr->accel_ms2[Z];
-
-    mag_vec.x = mag_ptr->axis[X];
-    mag_vec.y = -mag_ptr->axis[Y];
-    mag_vec.z = mag_ptr->axis[Z];
+    acc_vec.x = imu_ptr->accel_ms2[X];
+    acc_vec.y = imu_ptr->accel_ms2[Y];
+    acc_vec.z = imu_ptr->accel_ms2[Z];
 
     norm_vector3(&acc_vec);
-    norm_vector3(&mag_vec);
+
+    static vector3_t local_vr_a = {0.0f, 0.0f, 0.0f};
 
     local_vr_a.x = 2.0f * ((q.x * q.z) - (q.w * q.y));
     local_vr_a.y = 2.0f * ((q.w * q.x) + (q.y * q.z));
@@ -127,12 +125,20 @@ void ahrs_correct()
 
 #if SETUP_MAGNETO_TYPE != MAG_NONE
 
+    static vector3_t local_vr_m = {0.0f, 0.0f, 0.0f};
+
     local_vr_m.x = 2.0f * ((q.x * q.y) + (q.w * q.z));
     local_vr_m.y = 2.0f * ((q.w * q.w) + (q.y * q.y)) - 1.0f;
     local_vr_m.z = 2.0f * ((q.y * q.z) - (q.w * q.x));
 
     static vector3_t err_mag = {0.0f, 0.0f, 0.0f};
     static vector3_t temp = {0.0f, 0.0f, 0.0f};
+
+    mag_vec.x = mag_ptr->axis[X];
+    mag_vec.y = mag_ptr->axis[Y];
+    mag_vec.z = mag_ptr->axis[Z];
+    
+    norm_vector3(&mag_vec);
 
     temp = cross_product(&acc_vec, &mag_vec);
     err_mag = cross_product(&temp, &local_vr_m);
@@ -146,9 +152,6 @@ void ahrs_correct()
     static uint8_t prev_movement_state = 0;
     if (flight_ptr->arm_status == 0 && (movement_state == 0 && prev_movement_state == 1))
     {
-        mag_vec.x = mag_ptr->axis[X];
-        mag_vec.y = mag_ptr->axis[Y];
-        mag_vec.z = -mag_ptr->axis[Z];
         set_heading_quat(state_ptr->pitch_deg, state_ptr->roll_deg, &mag_vec, &q);
     }
     prev_movement_state = movement_state;
@@ -156,16 +159,13 @@ void ahrs_correct()
     // ground can distort magnetic heading. we need to reset magnetic heading when we are away from ground some distance
     if (flight_ptr->is_in_flight_mag_allign_done == 0 && flight_ptr->arm_status == 1 && state_ptr->altitude_m > IN_FLT_MAG_ALLN_ALT)
     {
-        mag_vec.x = mag_ptr->axis[X];
-        mag_vec.y = mag_ptr->axis[Y];
-        mag_vec.z = -mag_ptr->axis[Z];
         set_heading_quat(state_ptr->pitch_deg, state_ptr->roll_deg, &mag_vec, &q);
         flight_ptr->is_in_flight_mag_allign_done = 1;
     }
 
-    imu_ptr->gyro_bias_dps[Y] += err.x * config_ptr->ahrs_filt_zeta;
-    imu_ptr->gyro_bias_dps[X] += err.y * config_ptr->ahrs_filt_zeta;
-    imu_ptr->gyro_bias_dps[Z] -= err.z * config_ptr->ahrs_filt_zeta;
+    imu_ptr->gyro_bias_dps[X] += err.x * config_ptr->ahrs_filt_zeta;
+    imu_ptr->gyro_bias_dps[Y] += err.y * config_ptr->ahrs_filt_zeta;
+    imu_ptr->gyro_bias_dps[Z] += err.z * config_ptr->ahrs_filt_zeta;
 
 #else
 
@@ -173,8 +173,8 @@ void ahrs_correct()
     err.y = err_acc.y;
     err.z = err_acc.z;
 
-    imu_ptr->gyro_bias_dps[Y] += err.x * config_ptr->ahrs_filt_zeta;
-    imu_ptr->gyro_bias_dps[X] += err.y * config_ptr->ahrs_filt_zeta;
+    imu_ptr->gyro_bias_dps[X] += err.x * config_ptr->ahrs_filt_zeta;
+    imu_ptr->gyro_bias_dps[Y] += err.y * config_ptr->ahrs_filt_zeta;
 
 #endif
 
@@ -200,9 +200,9 @@ static void get_attitude_heading()
     if (state_ptr->heading_deg < 0) state_ptr->heading_deg += 360.0f;
     else if (state_ptr->heading_deg > 360.0f) state_ptr->heading_deg -= 360.0f;
 
-    state_ptr->pitch_dps = imu_ptr->gyro_dps[X];
-    state_ptr->roll_dps = imu_ptr->gyro_dps[Y];
-    state_ptr->yaw_dps = -imu_ptr->gyro_dps[Z];
+    state_ptr->roll_dps = imu_ptr->gyro_dps[X];
+    state_ptr->pitch_dps = imu_ptr->gyro_dps[Y];
+    state_ptr->yaw_dps = imu_ptr->gyro_dps[Z];
 }
 
 
@@ -232,13 +232,13 @@ void earth_frame_acceleration()
     rot_matrix[1][0] = sinx * siny;
     rot_matrix[1][1] = cosx;
     rot_matrix[1][2] = -sinx * cosy;
-    rot_matrix[2][0] = -(cosx * siny);
-    rot_matrix[2][1] = sinx;
-    rot_matrix[2][2] = cosy * cosx;
+    rot_matrix[2][0] = cosx * siny;
+    rot_matrix[2][1] = -sinx;
+    rot_matrix[2][2] = -(cosy * cosx);
 
-    state_ptr->acc_forward_ms2 = imu_ptr->accel_ms2[Y] * rot_matrix[0][0] + imu_ptr->accel_ms2[X] * rot_matrix[1][0] + imu_ptr->accel_ms2[Z] * rot_matrix[2][0];
-    state_ptr->acc_right_ms2 = imu_ptr->accel_ms2[Y] * rot_matrix[0][1] + imu_ptr->accel_ms2[X] * rot_matrix[1][1] + imu_ptr->accel_ms2[Z] * rot_matrix[2][1];
-    state_ptr->acc_up_ms2 = (imu_ptr->accel_ms2[Y] * rot_matrix[0][2] + imu_ptr->accel_ms2[X] * rot_matrix[1][2] + imu_ptr->accel_ms2[Z] * rot_matrix[2][2]) - 9.806f;
+    state_ptr->acc_forward_ms2 = imu_ptr->accel_ms2[X] * rot_matrix[0][0] + imu_ptr->accel_ms2[Y] * rot_matrix[1][0] + imu_ptr->accel_ms2[Z] * rot_matrix[2][0];
+    state_ptr->acc_right_ms2 = imu_ptr->accel_ms2[X] * rot_matrix[0][1] + imu_ptr->accel_ms2[Y] * rot_matrix[1][1] + imu_ptr->accel_ms2[Z] * rot_matrix[2][1];
+    state_ptr->acc_up_ms2 = (imu_ptr->accel_ms2[X] * rot_matrix[0][2] + imu_ptr->accel_ms2[Y] * rot_matrix[1][2] + imu_ptr->accel_ms2[Z] * rot_matrix[2][2]) - 9.806f;
 
 
 /*  static float rot_matrix[3][3] = {0};
@@ -272,17 +272,15 @@ void altitude_predict()
 
 void altitude_correct()
 {
-    kalman_update(&kf, baro_ptr->altitude_m);
+    static uint16_t counter = 0;
+    counter++;
+    if (counter >= (uint16_t)(SETUP_MAIN_LOOP_FREQ_HZ / 50.0f))
+    {
+        counter = 0;
+        kalman_update(&kf, baro_ptr->altitude_m);
+    }
+    
 }
-
-/* static float deadband(float value, const float threshold)
-{
-    if (fabsf(value) < threshold) value = 0;
-    else if (value > 0) value -= threshold;
-    else if (value < 0) value += threshold;
-    return value;
-} */
-
 
 // Kalman filtresi başlatma fonksiyonu
 static void kalman_init(kalman_t *kf, float initial_height, float initial_velocity, float process_noise, float measurement_noise) 
@@ -345,6 +343,34 @@ static void kalman_update(kalman_t *kf, float measured_height)
     kf->P[1][1] -= K[1] * P01_temp;
 }
 
+void optical_flow_velocity_XY()
+{
+    static uint16_t counter = 0;
+    counter++;
+    if (counter >= (uint16_t)(SETUP_MAIN_LOOP_FREQ_HZ / 100.0f))
+    {
+        counter = 0;
+        static float filt_gyr_degs_pitch = 0.0f;
+        static float filt_gyr_degs_roll = 0.0f;
+        // Additional filtering required to match the phases of gyro and opt flow sensor
+        // 11.547 is calibration gain (degs / gain) has to be equal flow sensor output
+        filt_gyr_degs_roll += ((state_ptr->roll_dps / 11.5474487f) - filt_gyr_degs_roll) * 0.24f;
+        filt_gyr_degs_pitch += ((state_ptr->pitch_dps / 11.3375732f) - filt_gyr_degs_pitch) * 0.24f;
+
+        // Flow sensor outputs cpi value. Height info needed to calculate velocity in m/s
+        // This compansates the sensor output for roll and pitch and filters
+        flow_ptr->filt_x_cpi += ((flow_ptr->raw_x_cpi + filt_gyr_degs_roll) - flow_ptr->filt_x_cpi) * 0.2f;
+        flow_ptr->filt_y_cpi += ((flow_ptr->raw_y_cpi + filt_gyr_degs_pitch) - flow_ptr->filt_y_cpi) * 0.2f;
+
+        flow_ptr->velocity_y_ms = flow_ptr->filt_x_cpi * (state_ptr->altitude_m / 5.0f);
+        flow_ptr->velocity_x_ms = flow_ptr->filt_y_cpi * (state_ptr->altitude_m / -5.0f);
+
+        // 4cm away from center of rotation correction via angular speed to linear speed calculation
+        // y axis is not needed
+        flow_ptr->velocity_x_ms -= (state_ptr->yaw_dps * DEG_TO_RAD) * 0.045f;
+    }
+
+}
 
 static uint8_t is_movement_detected()
 {

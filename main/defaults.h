@@ -31,8 +31,11 @@
 #define DFLT_ALT_P                   180.0f // 100
 #define DFLT_ALT_I                   50.0f   // 2
 #define DFLT_ALT_D                   0.0f
-#define DFLT_AHRS_FILTER_BETA        0.3f
-#define DFLT_AHRS_FILTER_ZETA        0.003f
+#define DFLT_AHRS_FILTER_BETA        0.01f
+#define DFLT_AHRS_FILTER_ZETA        0.001f
+#define DFLT_LPF_CUTOFF_HZ           80.0f
+#define DFLT_NOTCH_1_FREQ            262.0f
+#define DFLT_NOTCH_1_BNDWDTH         45.0f
 
 void load_default_config(config_t *cfg);
 

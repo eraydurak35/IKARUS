@@ -36,6 +36,9 @@ void load_default_config(config_t *cfg)
     cfg->ahrs_filt_beta = DFLT_AHRS_FILTER_BETA;
     cfg->ahrs_filt_zeta = DFLT_AHRS_FILTER_ZETA;
     cfg->alt_vel_scale = DFLT_ALT_VEL_SCALE;
+    cfg->lpf_cutoff_hz = DFLT_LPF_CUTOFF_HZ;
+    cfg->notch_1_freq = DFLT_NOTCH_1_FREQ;
+    cfg->notch_1_bndwdth = DFLT_NOTCH_1_BNDWDTH;
 
     ESP_LOGI(TAG, "Default Config Loaded...");
 }

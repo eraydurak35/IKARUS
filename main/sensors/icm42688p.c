@@ -5,7 +5,7 @@
 #include "driver/spi_master.h"
 #include "freertos/task.h"
 #include "typedefs.h"
-
+#include "setup.h"
 
 static spi_device_handle_t icm42688p_handle;
 static calibration_t *accel_calib_data = NULL;
@@ -16,7 +16,7 @@ static void getCalibratedResults(imu_t *imu);
 void icm42688p_setup(calibration_t *acc_cal)
 {
     accel_calib_data = acc_cal;
-    spi_add_device_to_bus(&icm42688p_handle, ICM42688P_CS_PIN, SPI_FREQ);
+    spi_add_device_to_bus(&icm42688p_handle, SETUP_ICM42688P_CS_PIN, SPI_FREQ);
     spi_write_byte(icm42688p_handle, ICM426XX_RA_REG_BANK_SEL, ICM426XX_BANK_SELECT0);
     // Turn gyro acc off
     spi_write_byte(icm42688p_handle, ICM426XX_RA_PWR_MGMT0, ICM426XX_PWR_MGMT0_GYRO_ACCEL_MODE_OFF);
@@ -73,14 +73,25 @@ void icm42688p_read(imu_t *imu)
 
 static void parse_icm42688p_data(imu_t *imu, uint8_t *buff)
 {
-    imu->temp_mC = ((int16_t)(buff[0] << 8 | buff[1]) / 1.3248f) + 2500;
-    imu->accel_ms2[X] = (int16_t)(buff[2] << 8 | buff[3]) * ACC_GAIN;
-    imu->accel_ms2[Y] = (int16_t)(buff[4] << 8 | buff[5]) * ACC_GAIN;
-    imu->accel_ms2[Z] = (int16_t)(buff[6] << 8 | buff[7]) * ACC_GAIN;
+    static int16_t acc_axis[3] = {0, 0, 0};
+    static int16_t gyr_axis[3] = {0, 0, 0};
 
-    imu->gyro_dps[X] = (int16_t)(buff[8] << 8 | buff[9]) * GYR_GAIN;
-    imu->gyro_dps[Y] = (int16_t)(buff[10] << 8 | buff[11]) * GYR_GAIN;
-    imu->gyro_dps[Z] = (int16_t)(buff[12] << 8 | buff[13]) * GYR_GAIN;
+    imu->temp_mC = ((int16_t)(buff[0] << 8 | buff[1]) / 1.3248f) + 2500;
+    acc_axis[X] = (int16_t)(buff[2] << 8 | buff[3]);
+    acc_axis[Y] = (int16_t)(buff[4] << 8 | buff[5]);
+    acc_axis[Z] = (int16_t)(buff[6] << 8 | buff[7]);
+
+    gyr_axis[X] = (int16_t)(buff[8] << 8 | buff[9]);
+    gyr_axis[Y] = (int16_t)(buff[10] << 8 | buff[11]);
+    gyr_axis[Z] = (int16_t)(buff[12] << 8 | buff[13]);
+
+    imu->accel_ms2[X] = (acc_axis[ALIGNED_ACC_X_AXIS] * ALIGNED_ACC_X_AXIS_SIGN) * ACC_GAIN;
+    imu->accel_ms2[Y] = (acc_axis[ALIGNED_ACC_Y_AXIS] * ALIGNED_ACC_Y_AXIS_SIGN) * ACC_GAIN;
+    imu->accel_ms2[Z] = (acc_axis[ALIGNED_ACC_Z_AXIS] * ALIGNED_ACC_Z_AXIS_SIGN) * ACC_GAIN;
+
+    imu->gyro_dps[X] = (gyr_axis[ALIGNED_GYR_X_AXIS] * ALIGNED_GYR_X_AXIS_SIGN) * GYR_GAIN;
+    imu->gyro_dps[Y] = (gyr_axis[ALIGNED_GYR_Y_AXIS] * ALIGNED_GYR_Y_AXIS_SIGN) * GYR_GAIN;
+    imu->gyro_dps[Z] = (gyr_axis[ALIGNED_GYR_Z_AXIS] * ALIGNED_GYR_Z_AXIS_SIGN) * GYR_GAIN;
 }
 
 static void getCalibratedResults(imu_t *imu)

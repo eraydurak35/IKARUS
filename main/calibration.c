@@ -29,12 +29,12 @@ uint8_t accelerometer_calibration(imu_t *imu)
     // Ölçüm yapılacak yönleri temsil eden vektörler (X, Y, Z) sıralaması ile yazılmıştır
     static vector3_t referance_vector[6] = 
     {
-        {0.0f, 1.0f, 0.0f},     // Yukarı (Up)
-        {-1.0f, 0.0f, 0.0f},    // Sağa   (Right)
-        {0.0f, -1.0f, 0.0f},    // Aşağı  (Down)
-        {1.0f, 0.0f, 0.0f},     // Sola   (Left)
-        {0.0f, 0.0f, -1.0f},    // Ters   (Inverted)
-        {0.0f, 0.0f, 1.0f},     // Düz    (Upright)
+        {1.0f, 0.0f, 0.0f},     // Yukarı   (Up)
+        {0.0f, -1.0f, 0.0f},    // Sağa     (Right)
+        {-1.0f, 0.0f, 0.0f},    // Aşağı    (Down)
+        {0.0f, 1.0f, 0.0f},     // Sola     (Left)
+        {0.0f, 0.0f, 1.0f},     // Ters     (Inverted)
+        {0.0f, 0.0f, -1.0f},    // Düz      (Upright)
     };
     static uint16_t data_point_counter = 0;
 
@@ -78,29 +78,29 @@ uint8_t accelerometer_calibration(imu_t *imu)
             if (current_direction_number == 6)
             {
                 // Ortalama offset değerini bulmak için en büyük değer ile en küçük değeri topla ve 2 ye böl
-                calibration_data.offset[X] = (x_values[3] + x_values[1]) / 2.0f;
-                calibration_data.offset[Y] = (y_values[0] + y_values[2]) / 2.0f;
-                calibration_data.offset[Z] = (z_values[5] + z_values[4]) / 2.0f;
+                calibration_data.offset[X] = (x_values[0] + x_values[2]) / 2.0f;
+                calibration_data.offset[Y] = (y_values[3] + y_values[1]) / 2.0f;
+                calibration_data.offset[Z] = (z_values[4] + z_values[5]) / 2.0f;
 
                 // Bulunan offset değerini en büyük ve en küçük ölçümlerden çıkart
-                x_values[3] -= calibration_data.offset[X];
-                x_values[1] -= calibration_data.offset[X];
-                y_values[0] -= calibration_data.offset[Y];
-                y_values[2] -= calibration_data.offset[Y];
-                z_values[5] -= calibration_data.offset[Z];
+                x_values[0] -= calibration_data.offset[X];
+                x_values[2] -= calibration_data.offset[X];
+                y_values[3] -= calibration_data.offset[Y];
+                y_values[1] -= calibration_data.offset[Y];
                 z_values[4] -= calibration_data.offset[Z];
+                z_values[5] -= calibration_data.offset[Z];
 
                 // ölçek değerini bulmak için en büyük değerden en küçük değeri çıkart ve 2 ye böl
                 // 1g = 9.806m/s2 değeri için ölçek bul
-                calibration_data.scale[X] = 9.806f / ((x_values[3] - x_values[1]) / 2.0f);
-                calibration_data.scale[Y] = 9.806f / ((y_values[0] - y_values[2]) / 2.0f);
-                calibration_data.scale[Z] = 9.806f / ((z_values[5] - z_values[4]) / 2.0f);
+                calibration_data.scale[X] = 9.806f / ((x_values[0] - x_values[2]) / 2.0f);
+                calibration_data.scale[Y] = 9.806f / ((y_values[3] - y_values[1]) / 2.0f);
+                calibration_data.scale[Z] = 9.806f / ((z_values[4] - z_values[5]) / 2.0f);
 
                 // Bulunan kalibrasyon değerlerini kaydet
                 storage_save(&calibration_data, ACCEL_CALIB_DATA);
 
-                ESP_LOGI(TAG, "ACC Offset X: %.3f  Y: %.3f  Z: %.3f\n", calibration_data.offset[X], calibration_data.offset[Y], calibration_data.offset[Z]);
-                ESP_LOGI(TAG, "ACC Scale X: %.3f  Y: %.3f  Z: %.3f\n", calibration_data.scale[X], calibration_data.scale[Y], calibration_data.scale[Z]);
+                ESP_LOGI(TAG, "ACC Offset X: %.3f  Y: %.3f  Z: %.3f", calibration_data.offset[X], calibration_data.offset[Y], calibration_data.offset[Z]);
+                ESP_LOGI(TAG, "ACC Scale X: %.3f  Y: %.3f  Z: %.3f", calibration_data.scale[X], calibration_data.scale[Y], calibration_data.scale[Z]);
                 // Kalibrasyon tamamlandı 1 döndür
                 return 1;
             }
@@ -220,13 +220,13 @@ uint8_t magnetometer_calibration(magnetometer_t *mag)
             calibration_data.scale[Y] = avg_delta / calibration_data.scale[Y];
             calibration_data.scale[Z] = avg_delta / calibration_data.scale[Z];
 
-            // Bulunan kalibrasyon değerlerini kayet
+            // Bulunan kalibrasyon değerlerini kaydet
             storage_save(&calibration_data, MAG_CALIB_DATA);
             
-            ESP_LOGI(TAG, "MAG Offset X: %.3f  Y: %.3f  Z: %.3f\n", calibration_data.offset[X], calibration_data.offset[Y], calibration_data.offset[Z]);
-            ESP_LOGI(TAG, "MAG Scale X: %.3f  Y: %.3f  Z: %.3f\n", calibration_data.scale[X], calibration_data.scale[Y], calibration_data.scale[Z]);
+            ESP_LOGI(TAG, "MAG Offset X: %.3f  Y: %.3f  Z: %.3f", calibration_data.offset[X], calibration_data.offset[Y], calibration_data.offset[Z]);
+            ESP_LOGI(TAG, "MAG Scale X: %.3f  Y: %.3f  Z: %.3f", calibration_data.scale[X], calibration_data.scale[Y], calibration_data.scale[Z]);
 
-            // Kalibrasyon tamamlandır 1 döndür
+            // Kalibrasyon tamamlandı 1 döndür
             return 1;
         }
     }
@@ -261,7 +261,7 @@ uint8_t gyro_calibration(imu_t *imu)
             imu->gyro_bias_dps[Y] = sum_y / 1000.0f;
             imu->gyro_bias_dps[Z] = sum_z / 1000.0f;
             // Bulunan kayıklık değerini yazdır.
-            ESP_LOGI(TAG, "Gyro offset --> X: %.4f  Y: %.4f  Z: %.4f\n\n", imu->gyro_bias_dps[X], imu->gyro_bias_dps[Y], imu->gyro_bias_dps[Z]);
+            ESP_LOGI(TAG, "Gyro offset --> X: %.4f  Y: %.4f  Z: %.4f", imu->gyro_bias_dps[X], imu->gyro_bias_dps[Y], imu->gyro_bias_dps[Z]);
             // Kalibrasyonun tamamlandığını bildir
             return 1;
         }

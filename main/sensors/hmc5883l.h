@@ -127,6 +127,6 @@
 
 
 uint8_t hmc5883l_setup(calibration_t *mg_cal);
-void hmc5883l_read(magnetometer_t *hmc);
+void hmc5883l_read(magnetometer_t *mag);
 
 #endif

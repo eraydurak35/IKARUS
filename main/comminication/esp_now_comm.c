@@ -108,8 +108,8 @@ void esp_now_send_telemetry()
     telemetry_ptr->target_velocity_y_ms = target_ptr->velocity_y_ms;
     telemetry_ptr->target_velocity_z_ms = target_ptr->velocity_z_ms;
     telemetry_ptr->flow_quality = flow_ptr->quality;
-    telemetry_ptr->flow_x_velocity = flow_ptr->velocity_x_ms;
-    telemetry_ptr->flow_y_velocity = flow_ptr->velocity_y_ms;
+    telemetry_ptr->flow_x_velocity = flow_ptr->velocity_x_ms * 1000.0f;
+    telemetry_ptr->flow_y_velocity = flow_ptr->velocity_y_ms * 1000.0f;
     telemetry_ptr->gps_fix = gnss_ptr->fix;
     telemetry_ptr->gps_satCount = gnss_ptr->satCount;
     telemetry_ptr->gps_latitude = gnss_ptr->latitude;

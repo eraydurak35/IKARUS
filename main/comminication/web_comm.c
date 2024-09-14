@@ -621,6 +621,9 @@ void web_comm_init(radio_control_t *radio, states_t *st, flight_t *flt, telemetr
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
+    // reduce power consumption
+    ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(8));
+
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_AP_STACONNECTED, &connect_handler, &server));
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_AP_STADISCONNECTED, &disconnect_handler, &server));
 

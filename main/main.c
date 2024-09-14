@@ -60,7 +60,7 @@ static TaskHandle_t task5_handler;
 static TaskHandle_t task6_handler;
 static TaskHandle_t task7_handler;
 #endif
-#if SETUP_OPT_FLOW_TYPE == OPT_FLOW_PMW3901
+#if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
 static TaskHandle_t task8_handler;
 #endif
 
@@ -97,7 +97,7 @@ void IRAM_ATTR timer1_callback(void *arg)
 void IRAM_ATTR button_ISR(void *arg)
 {
     // Kalibrasyon görevine butonun durum bilgisini gönder
-    xTaskNotifyFromISR(task4_handler, gpio_get_level(BUTTON_PIN), eSetValueWithOverwrite, false);
+    xTaskNotifyFromISR(task4_handler, gpio_get_level(SETUP_BUTTON_PIN), eSetValueWithOverwrite, false);
 }
 
 void task_1(void *pvParameters);
@@ -130,14 +130,18 @@ void task_1(void *pvParameters)
     xTaskCreatePinnedToCore(&task_8, "task8", 1024 * 4, NULL, 0, &task8_handler, tskNO_AFFINITY);
     #endif
     // 3 ivme 3 gyro için lowpass yapısını başlat
-    biquad_lpf_array_init(6, lowpass, 80.0f, 1000.0f);
+    if (config.lpf_cutoff_hz == 0.0f) {
+        biquad_lpf_array_init(6, lowpass, DFLT_LPF_CUTOFF_HZ, SETUP_MAIN_LOOP_FREQ_HZ);
+    } else {
+        biquad_lpf_array_init(6, lowpass, config.lpf_cutoff_hz, SETUP_MAIN_LOOP_FREQ_HZ);
+    }
     // F450'nin tepe gürültüsü 72Hz bant genişliği 50Hz
     // Fırçalı dronun tepe gürültüsü 262.0Hz bant genişliği 45Hz
-    #if SETUP_MOTOR_TYPE == MOTOR_CORELESS
-    biquad_notch_filter_array_init(6, notch, 262.0f, 45.0f, 1000.0f);
-    #else 
-    biquad_notch_filter_array_init(6, notch, 72.0f, 50.0f, 1000.0f);
-    #endif
+    if (config.notch_1_freq == 0.0f || config.notch_1_bndwdth == 0.0f) {
+        biquad_notch_filter_array_init(6, notch, DFLT_NOTCH_1_FREQ, DFLT_NOTCH_1_BNDWDTH, SETUP_MAIN_LOOP_FREQ_HZ);
+    } else {
+        biquad_notch_filter_array_init(6, notch, config.notch_1_freq, config.notch_1_bndwdth, SETUP_MAIN_LOOP_FREQ_HZ);
+    }
     // Kestirim algoritmasını başlatmadan önce filtrelerin buffer'ını doldur.
     for (uint8_t i = 0; i <= 100; i++)
     {
@@ -147,7 +151,7 @@ void task_1(void *pvParameters)
         vTaskDelay(2);
     }
     // Duruş kestirim algoritmasını başlat
-    ahrs_init(&config, &states, &imu, &mag, &barometer, &flight);
+    ahrs_init(&config, &states, &imu, &mag, &barometer, &flow, &range, &flight);
     static uint32_t receivedValue = 0;
     while (1)
     {
@@ -155,13 +159,16 @@ void task_1(void *pvParameters)
         // burası her 1ms de bir çalışacak.
         if (xTaskNotifyWait(0, ULONG_MAX, &receivedValue, 1 / portTICK_PERIOD_MS) == pdTRUE)
         {
+            //printf("1\n");
+            //printf("%.2f,%.2f,%.2f\n", states.pitch_deg, states.roll_deg, states.heading_deg);
             // IMU verilerini oku
             icm42688p_read(&imu);
             // IMU verilerini alçak geçiren filtreden geçir.
             apply_biquad_lpf_to_imu(&imu, lowpass);
             // IMU verilerini notch filtreden geçir.
             apply_biquad_notch_filter_to_imu(&imu, notch);
-            #if SETUP_BLACKBOX == true
+            #if SETUP_USE_BLACKBOX == true
+            // Bu fonksiyon, imu filtrelenmeden önce kaydedilecekse filtreden önce çağırılmalıdır.
             blackbox_save();
             #endif
             // gyroscope integrali alarak duruşu hesapla
@@ -173,6 +180,11 @@ void task_1(void *pvParameters)
             earth_frame_acceleration();
             // earth frame'deki ivme bilgisini kullanarak yükseklik hesapla
             altitude_predict();
+            // Yükseklik kestirimini güncelle
+            altitude_correct();
+            #if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
+            optical_flow_velocity_XY();
+            #endif
             //printf("%.2f,%.2f,%.2f\n", states.acc_forward_ms2, states.acc_right_ms2, states.acc_up_ms2);
             #if SETUP_COMM_TYPE == USE_WEBCOMM && SETUP_CRAFT_TYPE == CRAFT_TYPE_QUADCOPTER
             small_drone_flight_control();
@@ -187,6 +199,8 @@ void task_1(void *pvParameters)
 // Gyro kalibrasyon görevi
 void task_2(void *pvParameters)
 {
+    // IMU'nun ayarlarını yap ve başlat
+    icm42688p_setup(&accel_calibration_data);
     // Durum ledini söndür
     status_led_set_brightness(0);
     uint8_t blink_counter = 0;
@@ -206,27 +220,9 @@ void task_2(void *pvParameters)
         {
             // LED yanık kalsın
             status_led_set_brightness(100);
-            // Ana görevi başlatabiliriz
-            xTaskCreatePinnedToCore(&task_1, "task1", 1024 * 4, NULL, 1, &task1_handler, tskNO_AFFINITY);
             // Diğer sensörlerdenden veri okuyan görevi başlat
             xTaskCreatePinnedToCore(&task_3, "task3", 1024 * 4, NULL, 1, &task3_handler, tskNO_AFFINITY);
-            // İvme ölçer ve manyetik sensör kalibrasyon görevi. Öncelik değeri (Idle = 0) olarak ayarlı
-            xTaskCreatePinnedToCore(&task_4, "task4", 1024 * 4, NULL, 0, &task4_handler, tskNO_AFFINITY);
-            #if SETUP_GNSS_TYPE != GNSS_NONE
-            // GNSS alıcısından veri okuyan görevi başlat
-            xTaskCreatePinnedToCore(&task_5, "task5", 1024 * 4, NULL, 1, &task5_handler, tskNO_AFFINITY);
-            #endif
-            // Timer interrupt kurulumu
-            const esp_timer_create_args_t timer1_args =
-            {
-                .callback = &timer1_callback,
-                .arg = NULL,
-                .name = "timer1"
-            };
-            esp_timer_create(&timer1_args, &timer1);
-            // 1000us de bir defa çalışsın
-            esp_timer_start_periodic(timer1, 1000);
-            puts("IKARUS");
+
             // Bu task ile işimiz kalmadı. Silebiliriz.
             vTaskDelete(NULL);
             // Kod buraya ulaşmamalı.
@@ -240,9 +236,40 @@ void task_2(void *pvParameters)
 
 void task_3(void *pvParameters)
 {
+    #if SETUP_MAGNETO_TYPE == MAG_QMC5883L
+    // Manyetik sensörün ayarlarını yap ve başlat
+    qmc5883l_setup(&mag_calibration_data);
+    qmc5883l_read(&mag, 0);
+    #elif SETUP_MAGNETO_TYPE == MAG_HMC5883L
+    hmc5883l_setup(&mag_calibration_data);
+    hmc5883l_read(&mag);
+    #endif
+    // bmp3xx sensörünün ayarlarını yap ve başlat
+    bmp390_setup_spi();
+    // Barometre geçerli veri üretene kadar bir süre bekle
+    vTaskDelay(500);
     // Yükseklik hesabında kullanılacak olan sıfır sayılacak basıncı kaydet
     baro_set_ground_pressure(&barometer);
-    
+    // İvme ölçer ve manyetik sensör kalibrasyon görevi. Öncelik değeri (Idle = 0) olarak ayarlı
+    xTaskCreatePinnedToCore(&task_4, "task4", 1024 * 4, NULL, 0, &task4_handler, tskNO_AFFINITY);
+    #if SETUP_GNSS_TYPE != GNSS_NONE
+    // GNSS alıcısından veri okuyan görevi başlat
+    xTaskCreatePinnedToCore(&task_5, "task5", 1024 * 4, NULL, 1, &task5_handler, tskNO_AFFINITY);
+    #endif
+    // Ana görevi başlatabiliriz
+    xTaskCreatePinnedToCore(&task_1, "task1", 1024 * 4, NULL, 1, &task1_handler, tskNO_AFFINITY);
+    // Timer interrupt kurulumu
+    const esp_timer_create_args_t timer1_args =
+    {
+        .callback = &timer1_callback,
+        .arg = NULL,
+        .name = "timer1"
+    };
+    esp_timer_create(&timer1_args, &timer1);
+    // SETUP_MAIN_LOOP_FREQ_HZ için timer başlat
+    esp_timer_start_periodic(timer1, (uint64_t)(1000000.0f / SETUP_MAIN_LOOP_FREQ_HZ));
+    puts("IKARUS");
+
     while (1)
     {
         get_battery_voltage(&flight.battery_voltage);
@@ -258,8 +285,6 @@ void task_3(void *pvParameters)
         tf_luna_read_range(&range, &states);
         //printf("%d\n", range.range_cm);
         #endif
-        // Yükseklik kestirimini güncelle
-        altitude_correct();
         //printf("%.4f\n", barometer.altitude_m);
         //printf("%.2f,%.2f,%.2f\n", mag.axis[X], mag.axis[Y], mag.axis[Z]);
         //printf("%.2f,%.2f\n", states.altitude_m, barometer.altitude_m);
@@ -286,7 +311,7 @@ void task_4(void *pvParameters)
                 // Butona basılması ile bırakılması arasındaki süreyi ölç
                 button_push_time_difference = (esp_timer_get_time() - button_push_current_time);
 
-                #if SETUP_BLACKBOX == true
+                #if SETUP_USE_BLACKBOX == true
                 // Bu süre (button_push_time_difference) 1 saniyeden kısa ise blackbox verileri yazdırılır.
                 if (button_push_time_difference < 1000000)
                 {
@@ -302,13 +327,13 @@ void task_4(void *pvParameters)
                             // Watchdog tetiklenmesin diye her satırdan sonra 1ms bekle
                             vTaskDelay(1);
                         }
-                        status_led_set_brightness(100)
+                        status_led_set_brightness(100);
                     }
                 }
                 #endif
                 #if SETUP_MAGNETO_TYPE != MAG_NONE
-                // Bu süre (button_push_time_difference) 1 ile 2 saniye arasında ise manyetik sensör kalibrasyonu seçilmiştir
-                if (button_push_time_difference >= 1000000 && button_push_time_difference <= 2000000)
+                // Bu süre (button_push_time_difference) 1 ile 5 saniye arasında ise manyetik sensör kalibrasyonu seçilmiştir
+                if (button_push_time_difference >= 1000000 && button_push_time_difference <= 5000000)
                 {
                     // diğer görevleri silebiliriz. Çalışmalarına gerek yok.
                     // timer1 durdurulur ve silinir.
@@ -342,11 +367,12 @@ void task_4(void *pvParameters)
                     }
                     // Bu noktaya ulaştığında kalibrasyon tamamlanmış demektir.
                     // Soft restart at
+                    printf("Manyetik kalibrasyon tamamlandi\n");
                     esp_restart();
                 }
                 #endif
-                // Bu süre (button_push_time_difference) 2 saniyeden kısa ise ivme ölçer kalibrasyonu seçilmiştir (1000000 us = 1 sn)
-                if (button_push_time_difference > 2000000)
+                // Bu süre (button_push_time_difference) 5 saniyeden kısa ise ivme ölçer kalibrasyonu seçilmiştir (1000000 us = 1 sn)
+                if (button_push_time_difference > 5000000)
                 {
                     // diğer görevleri silebiliriz. Çalışmalarına gerek yok.
                     // timer1 durdurulur ve silinir.
@@ -374,6 +400,7 @@ void task_4(void *pvParameters)
                         // 5ms bekle
                         vTaskDelay(5);
                     }
+                    printf("İvme kalibrasyonu tamamlandi\n");
                     // Bu noktaya ulaştığında kalibrasyon tamamlanmış demektir.
                     // Soft restart at
                     esp_restart();
@@ -408,7 +435,6 @@ void task_6(void *pvParameters)
 {
     static uint8_t flg2;
     esp_now_comm_init(&config, &waypoint, &flg2, &telemetry, &flight, &states, &imu, &mag, &barometer, &gnss, &flow, &range, &target, &gamepad);
-
     while (1)
     {
         esp_now_send_telemetry();
@@ -449,25 +475,17 @@ void app_main(void)
     #if SETUP_COMM_TYPE == USE_RC_LINK
     storage_read(&waypoint, MISSION_DATA);
     #endif
-    #if SETUP_BLACKBOX == true
+    #if SETUP_USE_BLACKBOX == true
     blackbox_init(&flight, &imu);
     #endif
     // GPIO pinlerini konfigüre et
     gpio_configure(&config);
     // Buton pinine interrupt service rouutine ekle
-    gpio_isr_handler_add(BUTTON_PIN, button_ISR, (void*) BUTTON_PIN);
-    #if SETUP_MAGNETO_TYPE == MAG_QMC5883L
-    // Manyetik sensörün ayarlarını yap ve başlat
-    qmc5883l_setup(&mag_calibration_data);
-    #elif SETUP_MAGNETO_TYPE == MAG_HMC5883L
-    hmc5883l_setup(&mag_calibration_data);
-    #endif 
-    // IMU'nun ayarlarını yap ve başlat
-    icm42688p_setup(&accel_calibration_data);
-    // bmp3xx sensörünün ayarlarını yap ve başlat
-    bmp390_setup_spi();
+    gpio_isr_handler_add(SETUP_BUTTON_PIN, button_ISR, (void*) SETUP_BUTTON_PIN);
     // Komut satırı arayüzünü başlatır (UART0 kullanılıyorken bu işlev çakışmaya neden oluyor)
-    // cli_begin(&config, &accel_calibration_data, &mag_calibration_data, &imu);
+    #if SETUP_GNSS_TYPE == GNSS_NONE
+    cli_begin(&config, &accel_calibration_data, &mag_calibration_data, &imu);
+    #endif
     // Gyro kalibrasyon prosedürünü başlat. Diğer görevler gyro kalibrasyonu tamamlandığında başlatılır.
     xTaskCreatePinnedToCore(&task_2, "task2", 1024 * 4, NULL, 1, &task2_handler, tskNO_AFFINITY);
 }

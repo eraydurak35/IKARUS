@@ -3,11 +3,12 @@
 #include "comminication/i2c.h"
 #include "typedefs.h"
 #include "esp_log.h"
+#include "setup.h"
 
 static calibration_t *mag_calib_data = NULL;
 
-static void parse_qmc5883l_data(magnetometer_t *qmc, uint8_t *buffer);
-static void get_calibrated_result(magnetometer_t *qmc);
+static void parse_qmc5883l_data(magnetometer_t *mag, uint8_t *buffer);
+static void get_calibrated_result(magnetometer_t *mag);
 /* static void mag_throttle_correction(magnetometer_t *mag, uint16_t throttle); */
 static uint8_t qmc5883l_check_drdy_bit();
 
@@ -34,16 +35,16 @@ uint8_t qmc5883l_setup(calibration_t *mg_cal)
     return 0;
 }
 
-void qmc5883l_read(magnetometer_t *qmc, uint16_t throttle)
+void qmc5883l_read(magnetometer_t *mag, uint16_t throttle)
 {
     static uint8_t buff[6] = {0};
 
     if (qmc5883l_check_drdy_bit() == 1)
     {
         i2c_read_bytes(I2C_NUM_0, QMC5883L_ADDR, OUTPUT_X_REG, buff, 6);
-        parse_qmc5883l_data(qmc, buff);
-        //mag_throttle_correction(qmc, throttle);
-        get_calibrated_result(qmc);
+        parse_qmc5883l_data(mag, buff);
+        //mag_throttle_correction(mag, throttle);
+        get_calibrated_result(mag);
     }
 }
 
@@ -64,22 +65,28 @@ static uint8_t qmc5883l_check_drdy_bit()
     return 0;
 }
 
-static void parse_qmc5883l_data(magnetometer_t *qmc, uint8_t *buffer)
+static void parse_qmc5883l_data(magnetometer_t *mag, uint8_t *buffer)
 {   
     // X Y Z order
-    qmc->axis[X] = (float)((int16_t)(buffer[0] | buffer[1] << 8));
-    qmc->axis[Y] = (float)((int16_t)(buffer[2] | buffer[3] << 8));
-    qmc->axis[Z] = (float)((int16_t)(buffer[4] | buffer[5] << 8));
+    static int16_t axis[3] = {0, 0, 0};
+
+    axis[X] = (int16_t)(buffer[0] | buffer[1] << 8);
+    axis[Y] = (int16_t)(buffer[2] | buffer[3] << 8);
+    axis[Z] = (int16_t)(buffer[4] | buffer[5] << 8);
+
+    mag->axis[X] = axis[ALIGNED_MAG_X_AXIS] * ALIGNED_MAG_X_AXIS_SIGN;
+    mag->axis[Y] = axis[ALIGNED_MAG_Y_AXIS] * ALIGNED_MAG_Y_AXIS_SIGN;
+    mag->axis[Z] = axis[ALIGNED_MAG_Z_AXIS] * ALIGNED_MAG_Z_AXIS_SIGN;
 }
 
-static void get_calibrated_result(magnetometer_t *qmc)
+static void get_calibrated_result(magnetometer_t *mag)
 {
-    qmc->axis[X] -= mag_calib_data->offset[X];
-    qmc->axis[Y] -= mag_calib_data->offset[Y];
-    qmc->axis[Z] -= mag_calib_data->offset[Z];
+    mag->axis[X] -= mag_calib_data->offset[X];
+    mag->axis[Y] -= mag_calib_data->offset[Y];
+    mag->axis[Z] -= mag_calib_data->offset[Z];
 
-    qmc->axis[X] *= mag_calib_data->scale[X];
-    qmc->axis[Y] *= mag_calib_data->scale[Y];
-    qmc->axis[Z] *= mag_calib_data->scale[Z];
+    mag->axis[X] *= mag_calib_data->scale[X];
+    mag->axis[Y] *= mag_calib_data->scale[Y];
+    mag->axis[Z] *= mag_calib_data->scale[Z];
 }
 

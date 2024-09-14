@@ -2,6 +2,7 @@
 #include "sensors/pmw3901.h"
 #include "comminication/uart.h"
 #include "typedefs.h"
+#include "setup.h"
 
 static uart_data_t uart_data;
 static uint8_t data_frame_buff[8] = {0};
@@ -12,7 +13,7 @@ static void parse_pmw3901_data(pmw3901_t *pmw);
 
 void pmw3901_init()
 {
-    uart_begin(UART_NUM_2, 19200, UART2_PIN_TX, UART2_PIN_RX, UART_PARITY_DISABLE);
+    uart_begin(UART_NUM_2, 19200, SETUP_UART_2_TX_PIN, SETUP_UART_2_RX_PIN, UART_PARITY_DISABLE);
 }
 
 void pmw3901_read(pmw3901_t *pmw)

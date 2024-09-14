@@ -87,9 +87,9 @@ void cli_begin(config_t *cfg_ptr, calibration_t *acc_p, calibration_t *mag_p, im
     config_key_value_pairs[25] = (key_value_t){"takeoff_alt", &cfg_ptr->takeoff_alt};
     config_key_value_pairs[26] = (key_value_t){"hover_throttle", &cfg_ptr->hover_throttle};
     config_key_value_pairs[27] = (key_value_t){"notch_1_freq", &cfg_ptr->notch_1_freq};
-    config_key_value_pairs[28] = (key_value_t){"notch_1_bndwdht", &cfg_ptr->notch_1_bndwdht};
+    config_key_value_pairs[28] = (key_value_t){"notch_1_bndwdth", &cfg_ptr->notch_1_bndwdth};
     config_key_value_pairs[29] = (key_value_t){"notch_2_freq", &cfg_ptr->notch_2_freq};
-    config_key_value_pairs[30] = (key_value_t){"notch_2_bndwdht", &cfg_ptr->notch_2_bndwdht};
+    config_key_value_pairs[30] = (key_value_t){"notch_2_bndwdth", &cfg_ptr->notch_2_bndwdth};
     config_key_value_pairs[31] = (key_value_t){"lpf_cutoff_hz", &cfg_ptr->lpf_cutoff_hz};
     config_key_value_pairs[32] = (key_value_t){"ahrs_filt_beta", &cfg_ptr->ahrs_filt_beta};
     config_key_value_pairs[33] = (key_value_t){"ahrs_filt_zeta", &cfg_ptr->ahrs_filt_zeta};

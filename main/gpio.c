@@ -89,7 +89,7 @@ static ledc_timer_config_t ledc_timer3 =
 
 static ledc_channel_config_t ledc_channel0 = 
 {
-    .gpio_num = S1_PIN,
+    .gpio_num = SETUP_S1_PIN,
     .speed_mode = LEDC_LOW_SPEED_MODE,
     .channel = LEDC_CHANNEL_0,
     .intr_type = LEDC_INTR_DISABLE,
@@ -98,7 +98,7 @@ static ledc_channel_config_t ledc_channel0 =
 };
 static ledc_channel_config_t ledc_channel1 = 
 {
-    .gpio_num = S2_PIN,
+    .gpio_num = SETUP_S2_PIN,
     .speed_mode = LEDC_LOW_SPEED_MODE,
     .channel = LEDC_CHANNEL_1,
     .intr_type = LEDC_INTR_DISABLE,
@@ -107,7 +107,7 @@ static ledc_channel_config_t ledc_channel1 =
 };
 static ledc_channel_config_t ledc_channel2 = 
 {
-    .gpio_num = S3_PIN,
+    .gpio_num = SETUP_S3_PIN,
     .speed_mode = LEDC_LOW_SPEED_MODE,
     .channel = LEDC_CHANNEL_2,
     .intr_type = LEDC_INTR_DISABLE,
@@ -116,7 +116,7 @@ static ledc_channel_config_t ledc_channel2 =
 };
 static ledc_channel_config_t ledc_channel3 = 
 {
-    .gpio_num = S4_PIN,
+    .gpio_num = SETUP_S4_PIN,
     .speed_mode = LEDC_LOW_SPEED_MODE,
     .channel = LEDC_CHANNEL_3,
     .intr_type = LEDC_INTR_DISABLE,
@@ -124,7 +124,7 @@ static ledc_channel_config_t ledc_channel3 =
     .duty = 0
 };
 
-#elif SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT300 || SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT600
+#elif SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT150 || SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT300 || SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT600
 
 static rmt_channel_handle_t esc_channel_1 = NULL;
 static rmt_channel_handle_t esc_channel_2 = NULL;
@@ -158,7 +158,7 @@ static ledc_timer_config_t ledc_status_led_timer =
 };
 static ledc_channel_config_t ledc_status_led_channel = 
 {
-    .gpio_num = LED_PIN,
+    .gpio_num = SETUP_LED_PIN,
     .speed_mode = LEDC_LOW_SPEED_MODE,
     .channel = LEDC_CHANNEL_4,
     .intr_type = LEDC_INTR_DISABLE,
@@ -187,8 +187,8 @@ void gpio_configure(config_t *cfg)
     status_led_setup();
     voltage_sens_adc_setup();
     boot_button_interrupt_setup();
-    i2c_master_init(I2C_NUM_0, SDA1, SCL1, I2C_HIGH_SPEED, GPIO_PULLUP_DISABLE);
-    spi_master_init(MISO_PIN, MOSI_PIN, CLK_PIN);
+    i2c_master_init(I2C_NUM_0, SETUP_I2C_0_SDA_PIN, SETUP_I2C_0_SCL_PIN, I2C_HIGH_SPEED, GPIO_PULLUP_DISABLE);
+    spi_master_init(SETUP_SPI_2_MISO_PIN, SETUP_SPI_2_MOSI_PIN, SETUP_SPI_2_CLK_PIN);
     status_led_set_brightness(100);
 }
 
@@ -226,7 +226,7 @@ void set_throttle_quadcopter(uint16_t mot1_thr, uint16_t mot2_thr, uint16_t mot3
     ledc_set_duty(ledc_timer3.speed_mode, ledc_channel3.channel, mot4_thr + 1005);
     ledc_update_duty(ledc_timer3.speed_mode, ledc_channel3.channel);
 
-    #elif SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT300 || SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT600
+    #elif SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT150 || SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT300 || SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT600
 
     // komut aralığı 0 -- 1000 ancak esc 0 -- 2000 aralığı istiyor
     throttle_1.throttle = mot1_thr * 2.0f;
@@ -267,7 +267,7 @@ static void quadcopter_motor_setup()
     ledc_channel_config(&ledc_channel2);
     ledc_channel_config(&ledc_channel3);
 
-    #elif SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT300 || SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT600
+    #elif SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT150 || SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT300 || SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT600
 
     throttle_1.throttle = 0;
     throttle_1.telemetry_req = false;
@@ -284,7 +284,7 @@ static void quadcopter_motor_setup()
     rmt_tx_channel_config_t tx_chan_config_1 = 
     {
         .clk_src = RMT_CLK_SRC_DEFAULT,
-        .gpio_num = S1_PIN,
+        .gpio_num = SETUP_S1_PIN,
         .mem_block_symbols = 48,
         .resolution_hz = DSHOT_ESC_RESOLUTION_HZ,
         .trans_queue_depth = 10,
@@ -293,7 +293,7 @@ static void quadcopter_motor_setup()
     rmt_tx_channel_config_t tx_chan_config_2 = 
     {
         .clk_src = RMT_CLK_SRC_DEFAULT,
-        .gpio_num = S2_PIN,
+        .gpio_num = SETUP_S2_PIN,
         .mem_block_symbols = 48,
         .resolution_hz = DSHOT_ESC_RESOLUTION_HZ,
         .trans_queue_depth = 10,
@@ -302,7 +302,7 @@ static void quadcopter_motor_setup()
     rmt_tx_channel_config_t tx_chan_config_3 = 
     {
         .clk_src = RMT_CLK_SRC_DEFAULT,
-        .gpio_num = S3_PIN,
+        .gpio_num = SETUP_S3_PIN,
         .mem_block_symbols = 48,
         .resolution_hz = DSHOT_ESC_RESOLUTION_HZ,
         .trans_queue_depth = 10,
@@ -311,7 +311,7 @@ static void quadcopter_motor_setup()
     rmt_tx_channel_config_t tx_chan_config_4 = 
     {
         .clk_src = RMT_CLK_SRC_DEFAULT,
-        .gpio_num = S4_PIN,
+        .gpio_num = SETUP_S4_PIN,
         .mem_block_symbols = 48,
         .resolution_hz = DSHOT_ESC_RESOLUTION_HZ,
         .trans_queue_depth = 10,
@@ -330,6 +330,8 @@ static void quadcopter_motor_setup()
         .baud_rate = 600000, // DSHOT600 protocol
         #elif  SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT300
         .baud_rate = 300000, // DSHOT300 protocol
+        #elif  SETUP_MOTOR_TYPE == MOTOR_BRUSHLESS_DSHOT150
+        .baud_rate = 150000, // DSHOT150 protocol
         #endif
         .post_delay_us = 50, // extra delay between each frame
     };
@@ -394,8 +396,6 @@ static void plane_four_channel_setup()
 #endif
 
 
-
-
 // LED'in parlaklığını yüzde cinsinden ayarlar
 void status_led_set_brightness(uint8_t percent)
 {
@@ -433,7 +433,7 @@ static void status_led_setup()
 
 static void voltage_sens_adc_setup()
 {
-    VSENS_CHANNEL = adc_gpio_to_channel(VSENS_PIN);
+    VSENS_CHANNEL = adc_gpio_to_channel(SETUP_VSENS_PIN);
     adc_oneshot_unit_init_cfg_t init_config1 = 
     {
         .unit_id = ADC_UNIT_1,
@@ -455,7 +455,7 @@ static void boot_button_interrupt_setup()
     gpio_config_t io_conf;
     io_conf.intr_type = GPIO_INTR_ANYEDGE; // Kesim hem yükselen hem düşen kenarda aktif
     io_conf.mode = GPIO_MODE_INPUT;        // Girdi olarak ayarla
-    io_conf.pin_bit_mask = (1ULL << BUTTON_PIN);
+    io_conf.pin_bit_mask = (1ULL << SETUP_BUTTON_PIN);
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
     gpio_config(&io_conf);

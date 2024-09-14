@@ -2,7 +2,6 @@
 #define TYPEDEFS_H
 
 #include <stdio.h>
-
 #define X 0
 #define Y 1
 #define Z 2
@@ -197,9 +196,9 @@ typedef struct
     float takeoff_alt;
     float hover_throttle;
     float notch_1_freq;
-    float notch_1_bndwdht;
+    float notch_1_bndwdth;
     float notch_2_freq;
-    float notch_2_bndwdht;
+    float notch_2_bndwdth;
     float lpf_cutoff_hz;
     float ahrs_filt_beta;
     float ahrs_filt_zeta;
