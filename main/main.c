@@ -484,7 +484,7 @@ void app_main(void)
     gpio_isr_handler_add(SETUP_BUTTON_PIN, button_ISR, (void*) SETUP_BUTTON_PIN);
     // Komut satırı arayüzünü başlatır (UART0 kullanılıyorken bu işlev çakışmaya neden oluyor)
     #if SETUP_GNSS_TYPE == GNSS_NONE
-    cli_begin(&config, &accel_calibration_data, &mag_calibration_data, &imu);
+    //cli_begin(&config, &accel_calibration_data, &mag_calibration_data, &imu);
     #endif
     // Gyro kalibrasyon prosedürünü başlat. Diğer görevler gyro kalibrasyonu tamamlandığında başlatılır.
     xTaskCreatePinnedToCore(&task_2, "task2", 1024 * 4, NULL, 1, &task2_handler, tskNO_AFFINITY);

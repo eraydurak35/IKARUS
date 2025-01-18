@@ -55,17 +55,17 @@
 #define MOTOR_BRUSHLESS_DSHOT300   4
 #define MOTOR_BRUSHLESS_DSHOT600   5
 
-//----------------------------------------------------------//
-//                  DONANIM KONFIGÜRASYONU                  //
-//----------------------------------------------------------//
-#define SETUP_USE_BLACKBOX        (false)                   // "true" --> "ARM" kayıt başlar, "DISARM" kayıt durur. "false" --> devre dışı bırakır.
-#define SETUP_MAGNETO_TYPE        (MAG_QMC5883L)            // Manyetik sensör seçimi.
-#define SETUP_CRAFT_TYPE          (CRAFT_TYPE_QUADCOPTER)   // Araç tipi seçimi
-#define SETUP_COMM_TYPE           (USE_RC_LINK)             // Kontrol methodu seçimi
-#define SETUP_MOTOR_TYPE          (MOTOR_BRUSHLESS_DSHOT300)          // Motor kontrol sinyali türü seçimi
-#define SETUP_GNSS_TYPE           (GNSS_UBX_M10)               // GNSS alıcı seçimi
-#define SETUP_OPT_FLOW_TYPE       (OPT_FLOW_PMW3901)           // Optik akış sensörü seçimi
-#define SETUP_LIDAR_TYPE          (LIDAR_TF_LUNA)              // LIDAR sensör türü seçimi
+//--------------------------------------------------------------//
+//                  DONANIM KONFIGÜRASYONU                      //
+//--------------------------------------------------------------//
+#define SETUP_USE_BLACKBOX        (false)                       // "true" --> "ARM" kayıt başlar, "DISARM" kayıt durur. "false" --> devre dışı bırakır.
+#define SETUP_MAGNETO_TYPE        (MAG_NONE)                // Manyetik sensör seçimi.
+#define SETUP_CRAFT_TYPE          (CRAFT_TYPE_QUADCOPTER)       // Araç tipi seçimi
+#define SETUP_COMM_TYPE           (USE_WEBCOMM)                 // Kontrol methodu seçimi
+#define SETUP_MOTOR_TYPE          (MOTOR_CORELESS)    // Motor kontrol sinyali türü seçimi
+#define SETUP_GNSS_TYPE           (GNSS_NONE)                // GNSS alıcı seçimi
+#define SETUP_OPT_FLOW_TYPE       (OPT_FLOW_NONE)            // Optik akış sensörü seçimi
+#define SETUP_LIDAR_TYPE          (LIDAR_NONE)               // LIDAR sensör türü seçimi
 
 //---- UART PIN KONFIGURASYONU ----//
 #define SETUP_UART_0_TX_PIN       (43) // Değiştirilemez.
@@ -97,7 +97,7 @@
 //---- DIGER PINLER ----//
 #define SETUP_LED_PIN             (2) // Değiştirilebilir.
 #define SETUP_BUTTON_PIN          (0) // Değiştirilemez.
-#define SETUP_VSENS_PIN           (6) // Değiştirilebilir. (Pin 1-10 dahil, arası kullanılabilir.)
+#define SETUP_VSENS_PIN           (5) // Değiştirilebilir. (Pin 1-10 dahil, arası kullanılabilir.)
 
 
 
