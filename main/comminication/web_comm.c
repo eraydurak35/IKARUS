@@ -234,10 +234,10 @@ const char* html_page =
 "      pitch = view.getInt8(2, true) / 1.4;"
 "      roll = view.getInt8(3, true) / 0.7;"
 "      heading = view.getUint8(4, true) / 0.7;"
-"      altitude = view.getInt8(5, true) / 10.0;"
-"      is_headless_on = view.getUint8(6, true);"
-"      is_flip_on = view.getUint8(7, true);"
-"      is_alt_hold_on = view.getUint8(8, true);"
+"      altitude = view.getInt16(5, true) / 10.0;"
+"      is_headless_on = view.getUint8(7, true);"
+"      is_flip_on = view.getUint8(8, true);"
+"      is_alt_hold_on = view.getUint8(9, true);"
 "      updateScoreDisplay();"
 
 "  };"
@@ -390,7 +390,7 @@ const char* html_page =
 "    checkOrientation();"
 "    window.addEventListener('resize', checkOrientation);"
 "    window.screen.orientation.addEventListener('change', checkOrientation);"
-"    setInterval(sendJoystickData, 50);"
+"    setInterval(sendJoystickData, 100);"
 "    updateScoreDisplay();"
 "  });"
 
@@ -487,7 +487,7 @@ static esp_err_t send_recv_handler(httpd_req_t *req)
     telemetry_ptr->pitch = (int8_t)(states_ptr->pitch_deg * 1.4f);
     telemetry_ptr->roll = (int8_t)(states_ptr->roll_deg * 0.7f);
     telemetry_ptr->heading = (uint8_t)(states_ptr->heading_deg * 0.7f);
-    telemetry_ptr->altitude = (int8_t)(states_ptr->altitude_m * 10.0f);
+    telemetry_ptr->altitude = (int16_t)(states_ptr->altitude_m * 10.0f);
 
 /*  telemetry.is_flip_on = telem_small_p->is_flip_on;
     telemetry.is_headless_on = telem_small_p->is_headless_on;

@@ -153,6 +153,10 @@ static void arm()
 static void disarm()
 {
     set_throttle_quadcopter(0, 0, 0, 0);
+    thr_m1 = 0;
+    thr_m2 = 0;
+    thr_m3 = 0;
+    thr_m4 = 0;
     flight_p->arm_status = 0;
 }
 
@@ -182,6 +186,20 @@ void small_drone_flight_control()
     {
         disarm();
     }
+
+    #if SETUP_ENABLE_HITL == true
+    static uint8_t counter = 0;
+    counter++;
+    if (counter > 4)
+    {
+        counter = 0;
+        mavlink_send_actuators(thr_m4, thr_m1, thr_m2, thr_m3);
+/*         mavlink_send_actuators(((radio_ptr->channel[RC_THROTTLE_CH] + 120) * 1023) / 120.0f, 
+        ((radio_ptr->channel[RC_THROTTLE_CH] + 120) * 1023) / 121.0f, 
+        ((radio_ptr->channel[RC_THROTTLE_CH] + 120) * 1023) / 120.0f, 
+        ((radio_ptr->channel[RC_THROTTLE_CH] + 120) * 1023) / 121.0f); */
+    }
+    #endif
 }
 
 static void outer_control_loop(float dt)
@@ -356,7 +374,7 @@ static void outer_control_loop(float dt)
         {
             // I added some throttle curve
             //target_p->throttle += pow((radio_ptr->channel[RC_THROTTLE_CH] / 1000.0f), 3) * 1.25f;
-            target_p->throttle = applyExpo((radio_ptr->channel[RC_THROTTLE_CH] + 120) / 2) * 5.0f;
+            target_p->throttle = applyExpo((radio_ptr->channel[RC_THROTTLE_CH] + 120) / 2) * 8.0f; // NORMALDE 5 ti HITL için 8 yaptım
             if (target_p->throttle > MAX_TARGET_THROTTLE) target_p->throttle = MAX_TARGET_THROTTLE;
             else if (target_p->throttle < IDLE_THROTTLE) target_p->throttle = IDLE_THROTTLE;
         }
@@ -557,6 +575,7 @@ static void inner_control_loop()
     //↑↑↑↑↑↑↑↑↑↑   MOTOR 4 (RIGHT TOP)   ↑↑↑↑↑↑↑↑↑↑
 
     //↓↓↓↓↓↓↓↓↓↓   OUTPUT TO THE MOTORS   ↓↓↓↓↓↓↓↓↓↓
+    //4 1 2 3 hitl
     set_throttle_quadcopter(thr_m1, thr_m2, thr_m3, thr_m4);
     //set_throttle_quadcopter((radio_ptr->channel[2] + 120) * 4, (radio_ptr->channel[2] + 120) * 4, (radio_ptr->channel[2] + 120) * 4, (radio_ptr->channel[2] + 120) * 4);
     //↑↑↑↑↑↑↑↑↑↑   OUTPUT TO THE MOTORS   ↑↑↑↑↑↑↑↑↑↑

@@ -56,8 +56,8 @@ void get_quat_deriv(quat_t *q_ptr, vector3_t *vect, quat_t *q_dot_ptr)
 void norm_vector3(vector3_t *vector_ptr)
 {
     static float norm;
-    norm = sqrtf(vector_ptr->x * vector_ptr->x + vector_ptr->y * vector_ptr->y + vector_ptr->z * vector_ptr->z);
-    if (norm == 0) norm = 0.01f;
+    norm = vector3_magnitude(vector_ptr);
+    if (norm < __FLT_EPSILON__) norm = __FLT_EPSILON__;
     vector_ptr->x /= norm;
     vector_ptr->y /= norm;
     vector_ptr->z /= norm;
@@ -67,8 +67,8 @@ void norm_vector3(vector3_t *vector_ptr)
 void norm_vector2(vector2_t *vector_ptr)
 {
     static float norm;
-    norm = sqrtf(vector_ptr->x * vector_ptr->x + vector_ptr->y * vector_ptr->y);
-    if (norm == 0) norm = 0.01f;
+    norm = vector2_magnitude(vector_ptr);
+    if (norm < __FLT_EPSILON__) norm = __FLT_EPSILON__;
     vector_ptr->x /= norm;
     vector_ptr->y /= norm;
 }
@@ -78,7 +78,7 @@ void norm_quat(quat_t *quat_ptr)
 {
     static float norm;
     norm = sqrtf(quat_ptr->w * quat_ptr->w + quat_ptr->x * quat_ptr->x + quat_ptr->y * quat_ptr->y + quat_ptr->z * quat_ptr->z);
-    if (norm == 0) norm = 0.01f;
+    if (norm < __FLT_EPSILON__) norm = __FLT_EPSILON__;
     quat_ptr->w /= norm;
     quat_ptr->x /= norm;
     quat_ptr->y /= norm;
@@ -184,7 +184,10 @@ quat_t get_quat_product(quat_t *q1, quat_t *q2)
 
 void get_quat_from_vector_measurements(vector3_t *vec_acc,vector3_t *vec_mag, quat_t *q_result)
 {
-    float pitch_radian = (asinf(vec_acc->y / sqrtf(vec_acc->x * vec_acc->x + vec_acc->y * vec_acc->y + vec_acc->z * vec_acc->z)));
+    float acc_vector_magnitude = vector3_magnitude(vec_acc);
+    if (acc_vector_magnitude < __FLT_EPSILON__) acc_vector_magnitude = __FLT_EPSILON__;
+
+    float pitch_radian = (asinf(vec_acc->y / acc_vector_magnitude));
     float roll_radian = -atan2f(vec_acc->x , -vec_acc->z);
 
     float cos_pitch = cosf(pitch_radian);

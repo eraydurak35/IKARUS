@@ -53,18 +53,20 @@ void ahrs_init(config_t *cfg, states_t *sta, imu_t *icm, magnetometer_t *hmc, bm
     acc_vec.y = imu_ptr->accel_ms2[Y];
     acc_vec.z = imu_ptr->accel_ms2[Z];
 
-#if SETUP_MAGNETO_TYPE != MAG_NONE
+    #if SETUP_MAGNETO_TYPE != MAG_NONE
 
     mag_vec.x = mag_ptr->axis[X];
     mag_vec.y = mag_ptr->axis[Y];
     mag_vec.z = mag_ptr->axis[Z];
 
-#endif
+    #endif
 
+    #if SETUP_ENABLE_HITL == false
     // Başlangıç anındaki quaternion duruşu ivme ve manyetik vektörlerden hesapla
     get_quat_from_vector_measurements(&acc_vec, &mag_vec, &q);
+    #endif
 
-    kalman_init(&kf, 0, 0, 0.001, 10.0);
+    kalman_init(&kf, 0, 0, 0.001f, 10.0f);
 }
 
 

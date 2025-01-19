@@ -77,5 +77,6 @@ void bmp390_setup_spi();
 void bmp390_read_i2c(bmp390_t *bmp);
 void bmp390_read_spi(bmp390_t *bmp);
 void baro_set_ground_pressure(bmp390_t *baro);
+void baro_get_altitude_velocity(bmp390_t *baro);
 
 #endif

@@ -41,7 +41,7 @@ typedef struct
     int8_t pitch;
     int8_t roll;
     uint8_t heading;
-    int8_t altitude;
+    int16_t altitude;
     uint8_t is_headless_on;
     uint8_t is_flip_on;
     uint8_t is_alt_hold_on;

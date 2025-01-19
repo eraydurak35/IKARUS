@@ -16,7 +16,7 @@ static void parse_bmp390_calib_bytes(uint8_t *buffer);
 static float bmp390_compans_temp(uint32_t tempADC);
 static float bmp390_compans_press(uint32_t pressADC, float temp);
 static void parse_bmp390_data_bytes(bmp390_t *bmp, uint8_t *buff);
-static void baro_get_altitude_velocity(bmp390_t *baro);
+
 void bmp390_setup_i2c()
 {
     uint8_t buff[21] = {0};
@@ -170,7 +170,7 @@ void baro_set_ground_pressure(bmp390_t *baro)
     baro->gnd_press = press_accumulator / 20.0;
 }
 
-static void baro_get_altitude_velocity(bmp390_t *baro)
+void baro_get_altitude_velocity(bmp390_t *baro)
 {
     static uint8_t first_time = 1;
     static float prev_altitude_m = 0.0f;

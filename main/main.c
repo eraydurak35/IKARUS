@@ -30,6 +30,7 @@
 #include "comminication/esp_now_comm.h"
 #include "comminication/web_comm.h"
 #include "command_line_interface.h"
+#include "mavlink/common/mavlink.h"
 #include "storage/nv_storage.h"
 #include "sensors/icm42688p.h"
 #include "sensors/qmc5883l.h"
@@ -47,6 +48,7 @@
 #include "setup.h"
 #include "ibus.h"
 #include "gpio.h"
+#include "hitl.h"
 
 static esp_timer_handle_t timer1;
 static TaskHandle_t task1_handler;
@@ -63,6 +65,7 @@ static TaskHandle_t task7_handler;
 #if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
 static TaskHandle_t task8_handler;
 #endif
+static TaskHandle_t task9_handler;
 
 static imu_t imu;
 static magnetometer_t mag;
@@ -142,6 +145,8 @@ void task_1(void *pvParameters)
     } else {
         biquad_notch_filter_array_init(6, notch, config.notch_1_freq, config.notch_1_bndwdth, SETUP_MAIN_LOOP_FREQ_HZ);
     }
+
+    #if SETUP_ENABLE_HITL == false
     // Kestirim algoritmasını başlatmadan önce filtrelerin buffer'ını doldur.
     for (uint8_t i = 0; i <= 100; i++)
     {
@@ -150,6 +155,10 @@ void task_1(void *pvParameters)
         apply_biquad_notch_filter_to_imu(&imu, notch);
         vTaskDelay(2);
     }
+    #else
+    vTaskDelay(500);
+    hitl_get_sensors(&imu, &barometer);
+    #endif
     // Duruş kestirim algoritmasını başlat
     ahrs_init(&config, &states, &imu, &mag, &barometer, &flow, &range, &flight);
     static uint32_t receivedValue = 0;
@@ -162,11 +171,22 @@ void task_1(void *pvParameters)
             //printf("1\n");
             //printf("%.2f,%.2f,%.2f\n", states.pitch_deg, states.roll_deg, states.heading_deg);
             // IMU verilerini oku
+            #if SETUP_ENABLE_HITL == false
             icm42688p_read(&imu);
+            #else
+            hitl_get_sensors(&imu, &barometer);
+            static uint8_t counter = 0;
+            counter++;
+            if (counter >= 200){
+                counter = 0;
+                baro_get_altitude_velocity(&barometer);
+            }
+            //printf("%.1f\n", imu.accel_ms2[Z]);
+            #endif
             // IMU verilerini alçak geçiren filtreden geçir.
-            apply_biquad_lpf_to_imu(&imu, lowpass);
+            //apply_biquad_lpf_to_imu(&imu, lowpass);
             // IMU verilerini notch filtreden geçir.
-            apply_biquad_notch_filter_to_imu(&imu, notch);
+            //apply_biquad_notch_filter_to_imu(&imu, notch);
             #if SETUP_USE_BLACKBOX == true
             // Bu fonksiyon, imu filtrelenmeden önce kaydedilecekse filtreden önce çağırılmalıdır.
             blackbox_save();
@@ -463,6 +483,43 @@ void task_8(void *pvParameters)
 }
 #endif
 
+
+void task_9(void *pvParameters)
+{
+    static uint8_t first_msg_found = 0;
+    static uint16_t counter = 0;
+    while (1)
+    {
+        uint8_t ret = hitl_read();
+
+        if (ret == 1 && first_msg_found == 0)
+        {
+            first_msg_found = 1;
+            xTaskCreatePinnedToCore(&task_1, "task1", 1024 * 4, NULL, 1, &task1_handler, tskNO_AFFINITY);
+            // Timer interrupt kurulumu
+            const esp_timer_create_args_t timer1_args =
+            {
+                .callback = &timer1_callback,
+                .arg = NULL,
+                .name = "timer1"
+            };
+            esp_timer_create(&timer1_args, &timer1);
+            // SETUP_MAIN_LOOP_FREQ_HZ için timer başlat
+            esp_timer_start_periodic(timer1, (uint64_t)(1000000.0f / SETUP_MAIN_LOOP_FREQ_HZ));
+        }
+
+        counter++;
+        if (counter >= 500)
+        {
+            counter = 0;
+            //printf("1\n");
+            mavlink_send_heartbeat();
+        }
+
+        vTaskDelay(2);
+    }
+}
+
 void app_main(void)
 {
     //nvs_flash_erase();//  (WIFI ağı görünmüyorsa bir defa bu satırı çalıştır)
@@ -484,8 +541,13 @@ void app_main(void)
     gpio_isr_handler_add(SETUP_BUTTON_PIN, button_ISR, (void*) SETUP_BUTTON_PIN);
     // Komut satırı arayüzünü başlatır (UART0 kullanılıyorken bu işlev çakışmaya neden oluyor)
     #if SETUP_GNSS_TYPE == GNSS_NONE
-    cli_begin(&config, &accel_calibration_data, &mag_calibration_data, &imu);
+    //cli_begin(&config, &accel_calibration_data, &mag_calibration_data, &imu);
     #endif
+    #if SETUP_ENABLE_HITL == true
+    xTaskCreatePinnedToCore(&task_9, "task9", 1024 * 4, NULL, 1, &task9_handler, tskNO_AFFINITY);
+    #else
     // Gyro kalibrasyon prosedürünü başlat. Diğer görevler gyro kalibrasyonu tamamlandığında başlatılır.
     xTaskCreatePinnedToCore(&task_2, "task2", 1024 * 4, NULL, 1, &task2_handler, tskNO_AFFINITY);
+    #endif
+    
 }

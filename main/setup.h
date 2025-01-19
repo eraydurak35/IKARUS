@@ -58,14 +58,15 @@
 //--------------------------------------------------------------//
 //                  DONANIM KONFIGÜRASYONU                      //
 //--------------------------------------------------------------//
+#define SETUP_ENABLE_HITL         (true)                        // 
 #define SETUP_USE_BLACKBOX        (false)                       // "true" --> "ARM" kayıt başlar, "DISARM" kayıt durur. "false" --> devre dışı bırakır.
-#define SETUP_MAGNETO_TYPE        (MAG_NONE)                // Manyetik sensör seçimi.
+#define SETUP_MAGNETO_TYPE        (MAG_NONE)                    // Manyetik sensör seçimi.
 #define SETUP_CRAFT_TYPE          (CRAFT_TYPE_QUADCOPTER)       // Araç tipi seçimi
 #define SETUP_COMM_TYPE           (USE_WEBCOMM)                 // Kontrol methodu seçimi
-#define SETUP_MOTOR_TYPE          (MOTOR_CORELESS)    // Motor kontrol sinyali türü seçimi
-#define SETUP_GNSS_TYPE           (GNSS_NONE)                // GNSS alıcı seçimi
-#define SETUP_OPT_FLOW_TYPE       (OPT_FLOW_NONE)            // Optik akış sensörü seçimi
-#define SETUP_LIDAR_TYPE          (LIDAR_NONE)               // LIDAR sensör türü seçimi
+#define SETUP_MOTOR_TYPE          (MOTOR_CORELESS)              // Motor kontrol sinyali türü seçimi
+#define SETUP_GNSS_TYPE           (GNSS_NONE)                   // GNSS alıcı seçimi
+#define SETUP_OPT_FLOW_TYPE       (OPT_FLOW_NONE)               // Optik akış sensörü seçimi
+#define SETUP_LIDAR_TYPE          (LIDAR_NONE)                  // LIDAR sensör türü seçimi
 
 //---- UART PIN KONFIGURASYONU ----//
 #define SETUP_UART_0_TX_PIN       (43) // Değiştirilemez.
