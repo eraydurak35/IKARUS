@@ -188,16 +188,12 @@ void small_drone_flight_control()
     }
 
     #if SETUP_ENABLE_HITL == true
-    static uint8_t counter = 0;
+    static uint16_t counter = 0;
     counter++;
-    if (counter > 4)
+    if (counter >= 4)
     {
         counter = 0;
         mavlink_send_actuators(thr_m4, thr_m1, thr_m2, thr_m3);
-/*         mavlink_send_actuators(((radio_ptr->channel[RC_THROTTLE_CH] + 120) * 1023) / 120.0f, 
-        ((radio_ptr->channel[RC_THROTTLE_CH] + 120) * 1023) / 121.0f, 
-        ((radio_ptr->channel[RC_THROTTLE_CH] + 120) * 1023) / 120.0f, 
-        ((radio_ptr->channel[RC_THROTTLE_CH] + 120) * 1023) / 121.0f); */
     }
     #endif
 }

@@ -1,6 +1,6 @@
 #include <hitl.h>
 
-static uint8_t buffer[32] = {0};
+static uint8_t buffer[MAVLINK_MAX_PACKET_LEN] = {0};
 static mavlink_message_t msg;
 static mavlink_status_t status;
 
@@ -95,16 +95,17 @@ static void mavlink_parse_msg(mavlink_message_t *msg)
     }
 }
 
-void hitl_get_sensors(imu_t *imu, bmp390_t *baro)
+void hitl_get_sensors(imu_t *imu, magnetometer_t *mag, bmp390_t *baro)
 {
     imu->gyro_dps[X] = hil_sensor_msg.xgyro * RAD_TO_DEG;
     imu->gyro_dps[Y] = hil_sensor_msg.ygyro * RAD_TO_DEG;
     imu->gyro_dps[Z] = hil_sensor_msg.zgyro * RAD_TO_DEG;
 
-    imu->accel_ms2[X] = -hil_sensor_msg.xacc;
-    imu->accel_ms2[Y] = -hil_sensor_msg.yacc;
-    imu->accel_ms2[Z] = -hil_sensor_msg.zacc;
+    imu->accel_ms2[X] = hil_sensor_msg.xacc;
+    imu->accel_ms2[Y] = hil_sensor_msg.yacc;
+    imu->accel_ms2[Z] = hil_sensor_msg.zacc;
+
+    
 
     baro->press = hil_sensor_msg.abs_pressure;
-    baro->gnd_press = 1013.25f;
 }

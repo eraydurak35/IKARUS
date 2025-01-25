@@ -49,6 +49,8 @@ void ahrs_init(config_t *cfg, states_t *sta, imu_t *icm, magnetometer_t *hmc, bm
     flow_ptr = flw;
     range_ptr = rng;
 
+    #if SETUP_ENABLE_HITL == false
+
     acc_vec.x = imu_ptr->accel_ms2[X];
     acc_vec.y = imu_ptr->accel_ms2[Y];
     acc_vec.z = imu_ptr->accel_ms2[Z];
@@ -60,12 +62,19 @@ void ahrs_init(config_t *cfg, states_t *sta, imu_t *icm, magnetometer_t *hmc, bm
     mag_vec.z = mag_ptr->axis[Z];
 
     #endif
+    #else
 
-    #if SETUP_ENABLE_HITL == false
-    // Başlangıç anındaki quaternion duruşu ivme ve manyetik vektörlerden hesapla
-    get_quat_from_vector_measurements(&acc_vec, &mag_vec, &q);
+    acc_vec.x = 0.0f;
+    acc_vec.y = 0.0f;
+    acc_vec.z = -9.806f;
+
+    mag_vec.x = -1.0f;
+    mag_vec.y = 0.0f;
+    mag_vec.z = 0.0f;
     #endif
 
+    // Başlangıç anındaki quaternion duruşu ivme ve manyetik vektörlerden hesapla
+    get_quat_from_vector_measurements(&acc_vec, &mag_vec, &q);
     kalman_init(&kf, 0, 0, 0.001f, 10.0f);
 }
 
@@ -125,7 +134,7 @@ void ahrs_correct()
 
     err_acc = cross_product(&acc_vec, &local_vr_a);
 
-#if SETUP_MAGNETO_TYPE != MAG_NONE
+#if SETUP_ENABLE_HITL == true || SETUP_MAGNETO_TYPE != MAG_NONE
 
     static vector3_t local_vr_m = {0.0f, 0.0f, 0.0f};
 

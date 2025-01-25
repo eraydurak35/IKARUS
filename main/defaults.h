@@ -6,13 +6,13 @@
 
 #if SETUP_ENABLE_HITL == true
 
-#define DFLT_MAX_PITCH_ANGLE         20.0f
-#define DFLT_MAX_ROLL_ANGLE          20.0f
-#define DFLT_MAX_PITCH_RATE          100.0f
-#define DFLT_MAX_ROLL_RATE           100.0f
+#define DFLT_MAX_PITCH_ANGLE         25.0f
+#define DFLT_MAX_ROLL_ANGLE          25.0f
+#define DFLT_MAX_PITCH_RATE          150.0f
+#define DFLT_MAX_ROLL_RATE           150.0f
 #define DFLT_MAX_YAW_RATE            100.0f 
-#define DFLT_PITCH_RATE_SCALE        1.0f
-#define DFLT_ROLL_RATE_SCALE         1.0f
+#define DFLT_PITCH_RATE_SCALE        4.5f
+#define DFLT_ROLL_RATE_SCALE         4.5f
 #define DFLT_YAW_RATE_SCALE          1.0f
 #define DFLT_ALT_VEL_SCALE           0.4f
 #define DFLT_MAX_VERTICAL_VELOCITY   1.0f
@@ -23,10 +23,10 @@
 #define DFLT_HOVER_THROTTLE          400.0f
 #define DFLT_PITCH_P                 0.2f
 #define DFLT_PITCH_I                 0.0f
-#define DFLT_PITCH_D                 2.0f
+#define DFLT_PITCH_D                 2.5f
 #define DFLT_ROLL_P                  0.2f
 #define DFLT_ROLL_I                  0.0f
-#define DFLT_ROLL_D                  2.0f
+#define DFLT_ROLL_D                  2.5f
 #define DFLT_YAW_P                   5.0f
 #define DFLT_YAW_I                   0.0f
 #define DFLT_POS_P                   12.0f
@@ -34,7 +34,7 @@
 #define DFLT_ALT_P                   180.0f // 100
 #define DFLT_ALT_I                   50.0f   // 2
 #define DFLT_ALT_D                   0.0f
-#define DFLT_AHRS_FILTER_BETA        0.01f
+#define DFLT_AHRS_FILTER_BETA        0.05f
 #define DFLT_AHRS_FILTER_ZETA        0.0f
 #define DFLT_LPF_CUTOFF_HZ           80.0f
 #define DFLT_NOTCH_1_FREQ            262.0f

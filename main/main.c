@@ -30,7 +30,7 @@
 #include "comminication/esp_now_comm.h"
 #include "comminication/web_comm.h"
 #include "command_line_interface.h"
-#include "mavlink/common/mavlink.h"
+#include "mavlink/Ikarus_messages/mavlink.h"
 #include "storage/nv_storage.h"
 #include "sensors/icm42688p.h"
 #include "sensors/qmc5883l.h"
@@ -157,7 +157,8 @@ void task_1(void *pvParameters)
     }
     #else
     vTaskDelay(500);
-    hitl_get_sensors(&imu, &barometer);
+    hitl_get_sensors(&imu, &mag, &barometer);
+    barometer.gnd_press = 1007.25f;
     #endif
     // Duruş kestirim algoritmasını başlat
     ahrs_init(&config, &states, &imu, &mag, &barometer, &flow, &range, &flight);
@@ -174,10 +175,10 @@ void task_1(void *pvParameters)
             #if SETUP_ENABLE_HITL == false
             icm42688p_read(&imu);
             #else
-            hitl_get_sensors(&imu, &barometer);
+            hitl_get_sensors(&imu, &mag, &barometer);
             static uint8_t counter = 0;
             counter++;
-            if (counter >= 200){
+            if (counter >= 20){
                 counter = 0;
                 baro_get_altitude_velocity(&barometer);
             }
@@ -507,14 +508,18 @@ void task_9(void *pvParameters)
             // SETUP_MAIN_LOOP_FREQ_HZ için timer başlat
             esp_timer_start_periodic(timer1, (uint64_t)(1000000.0f / SETUP_MAIN_LOOP_FREQ_HZ));
         }
-
-        counter++;
-        if (counter >= 500)
+        else
         {
-            counter = 0;
-            //printf("1\n");
-            mavlink_send_heartbeat();
+            counter++;
+            if (counter >= 500)
+            {
+                counter = 0;
+                //printf("1\n");
+                mavlink_send_heartbeat();
+            }
         }
+
+
 
         vTaskDelay(2);
     }
