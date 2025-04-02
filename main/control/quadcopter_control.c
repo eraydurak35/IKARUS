@@ -122,8 +122,9 @@ static void quadcopter_flight_mode_control()
         use_gps_hold = 0;
         is_hold_location_set = 0;
         flight_p->waypoint_mission_status = 0;
-
+        #if SETUP_GNSS_TYPE != GNSS_NONE
         storage_save(waypoint_p, MISSION_DATA);
+        #endif
 
         target_p->latitude = gnss_ptr->latitude;
         target_p->longitude = gnss_ptr->longitude;
@@ -147,6 +148,7 @@ static void quadcopter_flight_mode_control()
     // ||==============================================||
     // ||              RC POS HOLD LOGIC               ||
     // ||==============================================||
+    #if SETUP_GNSS_TYPE != GNSS_NONE
     if ((POS_HOLD_ON_CONDITION(radio_p->channel[RC_POS_HOLD_CH]) &&
          flight_p->pos_hold_status == 0) && flight_p->rth_status == 0)
     {
@@ -256,6 +258,7 @@ static void quadcopter_flight_mode_control()
         }
         target_p->altitude = state_p->altitude_m;
     }
+    #endif
 }
 
 void quadcopter_flight_control() // 1000Hz

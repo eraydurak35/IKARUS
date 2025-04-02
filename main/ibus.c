@@ -10,7 +10,7 @@ static void parse_ibus_data(radio_control_t *radio);
 
 void ibus_init()
 {
-    uart_begin(UART_NUM_1, 115200, SETUP_UART_1_TX_PIN, SETUP_UART_1_RX_PIN, UART_PARITY_DISABLE);
+    uart_begin(UART_NUM_1, 115200, SETUP_UART_1_TX_PIN, SETUP_UART_1_RX_PIN, UART_PARITY_DISABLE, UART_STOP_BITS_1);
 }
 
 void ibus_receiver_read(radio_control_t *rc)
@@ -72,6 +72,5 @@ static void process_new_line(uint8_t *bytes, radio_control_t *radio)
     if (checksum_ibus == checksum_cal)
     {
         memcpy(radio, bytes, sizeof(radio_control_t));
-        //printf("%d\n", radio_ptr->ch0);
     }
 }

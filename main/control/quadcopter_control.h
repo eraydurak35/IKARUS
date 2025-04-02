@@ -4,10 +4,10 @@
 #include "typedefs.h"
 
 #define QUAD_MAX_TARGET_THROTTLE 800
-#define QUAD_IDLE_THROTTLE 300
+#define QUAD_IDLE_THROTTLE 100
 #define EARTH_RADIUS_CM 637100000.0f
 #define EARTH_2_RADIUS_CM 1274200000.0f
-#define MAX_ANGULAR_ACCEL 650.0f
+#define MAX_ANGULAR_ACCEL 3000.0f // 650 büyük drone
 #define MAX_VEL_Z_ACCEL 5.0f
 // 140Hz cutoff --> ~1ms latency
 // 80Hz cutoff --> ~2ms latency

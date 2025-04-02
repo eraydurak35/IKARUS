@@ -13,7 +13,7 @@ static void parse_pmw3901_data(pmw3901_t *pmw);
 
 void pmw3901_init()
 {
-    uart_begin(UART_NUM_2, 19200, SETUP_UART_2_TX_PIN, SETUP_UART_2_RX_PIN, UART_PARITY_DISABLE);
+    uart_begin(UART_NUM_2, 19200, SETUP_UART_2_TX_PIN, SETUP_UART_2_RX_PIN, UART_PARITY_DISABLE, UART_STOP_BITS_1);
 }
 
 void pmw3901_read(pmw3901_t *pmw)

@@ -47,6 +47,7 @@
 #include "filters.h"
 #include "setup.h"
 #include "ibus.h"
+#include "sbus.h"
 #include "gpio.h"
 #include "hitl.h"
 
@@ -57,6 +58,7 @@ static TaskHandle_t task3_handler;
 static TaskHandle_t task4_handler;
 #if SETUP_GNSS_TYPE != GNSS_NONE
 static TaskHandle_t task5_handler;
+static TaskHandle_t task9_handler;
 #endif
 #if SETUP_COMM_TYPE == USE_RC_LINK
 static TaskHandle_t task6_handler;
@@ -65,7 +67,7 @@ static TaskHandle_t task7_handler;
 #if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
 static TaskHandle_t task8_handler;
 #endif
-static TaskHandle_t task9_handler;
+
 
 static imu_t imu;
 static magnetometer_t mag;
@@ -185,9 +187,9 @@ void task_1(void *pvParameters)
             //printf("%.1f\n", imu.accel_ms2[Z]);
             #endif
             // IMU verilerini alçak geçiren filtreden geçir.
-            //apply_biquad_lpf_to_imu(&imu, lowpass);
+            apply_biquad_lpf_to_imu(&imu, lowpass);
             // IMU verilerini notch filtreden geçir.
-            //apply_biquad_notch_filter_to_imu(&imu, notch);
+            apply_biquad_notch_filter_to_imu(&imu, notch);
             #if SETUP_USE_BLACKBOX == true
             // Bu fonksiyon, imu filtrelenmeden önce kaydedilecekse filtreden önce çağırılmalıdır.
             blackbox_save();
@@ -465,11 +467,19 @@ void task_6(void *pvParameters)
 
 void task_7(void *pvParameters)
 {
+    #if SETUP_RC_PROTOCOL == SERIAL_IBUS
     ibus_init();
     while (1)
     {
         ibus_receiver_read(&radio);
     }
+    #elif SETUP_RC_PROTOCOL == SERIAL_SBUS
+    sbus_init();
+    while (1)
+    {
+        sbus_receiver_read(&radio);
+    }
+    #endif
 }
 #endif
 
@@ -484,7 +494,7 @@ void task_8(void *pvParameters)
 }
 #endif
 
-
+#if SETUP_ENABLE_HITL == true
 void task_9(void *pvParameters)
 {
     static uint8_t first_msg_found = 0;
@@ -518,13 +528,10 @@ void task_9(void *pvParameters)
                 mavlink_send_heartbeat();
             }
         }
-
-
-
         vTaskDelay(2);
     }
 }
-
+#endif
 void app_main(void)
 {
     //nvs_flash_erase();//  (WIFI ağı görünmüyorsa bir defa bu satırı çalıştır)
@@ -534,7 +541,7 @@ void app_main(void)
     if (!storage_read(&mag_calibration_data, MAG_CALIB_DATA)) reset_calibration_data(&mag_calibration_data);
     if (!storage_read(&accel_calibration_data, ACCEL_CALIB_DATA)) reset_calibration_data(&accel_calibration_data);
     if (!storage_read(&config, CONFIG_DATA)) load_default_config(&config);
-    #if SETUP_COMM_TYPE == USE_RC_LINK
+    #if SETUP_GNSS_TYPE != GNSS_NONE
     storage_read(&waypoint, MISSION_DATA);
     #endif
     #if SETUP_USE_BLACKBOX == true

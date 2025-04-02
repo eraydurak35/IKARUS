@@ -12,18 +12,82 @@ extern "C" {
 
 #ifndef MAVLINK_TEST_ALL
 #define MAVLINK_TEST_ALL
-static void mavlink_test_standard(uint8_t, uint8_t, mavlink_message_t *last_msg);
+
 static void mavlink_test_Ikarus_messages(uint8_t, uint8_t, mavlink_message_t *last_msg);
 
 static void mavlink_test_all(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
-    mavlink_test_standard(system_id, component_id, last_msg);
+
     mavlink_test_Ikarus_messages(system_id, component_id, last_msg);
 }
 #endif
 
-#include "../standard/testsuite.h"
 
+
+
+static void mavlink_test_heartbeat(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+    mavlink_status_t *status = mavlink_get_channel_status(MAVLINK_COMM_0);
+        if ((status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) && MAVLINK_MSG_ID_HEARTBEAT >= 256) {
+            return;
+        }
+#endif
+    mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+    mavlink_heartbeat_t packet_in = {
+        963497464,17,84,151,218,3
+    };
+    mavlink_heartbeat_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        packet1.custom_mode = packet_in.custom_mode;
+        packet1.type = packet_in.type;
+        packet1.autopilot = packet_in.autopilot;
+        packet1.base_mode = packet_in.base_mode;
+        packet1.system_status = packet_in.system_status;
+        packet1.mavlink_version = packet_in.mavlink_version;
+        
+        
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+        if (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) {
+           // cope with extensions
+           memset(MAVLINK_MSG_ID_HEARTBEAT_MIN_LEN + (char *)&packet1, 0, sizeof(packet1)-MAVLINK_MSG_ID_HEARTBEAT_MIN_LEN);
+        }
+#endif
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_heartbeat_encode(system_id, component_id, &msg, &packet1);
+    mavlink_msg_heartbeat_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_heartbeat_pack(system_id, component_id, &msg , packet1.type , packet1.autopilot , packet1.base_mode , packet1.custom_mode , packet1.system_status );
+    mavlink_msg_heartbeat_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_heartbeat_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.type , packet1.autopilot , packet1.base_mode , packet1.custom_mode , packet1.system_status );
+    mavlink_msg_heartbeat_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+            comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+    mavlink_msg_heartbeat_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_heartbeat_send(MAVLINK_COMM_1 , packet1.type , packet1.autopilot , packet1.base_mode , packet1.custom_mode , packet1.system_status );
+    mavlink_msg_heartbeat_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+#ifdef MAVLINK_HAVE_GET_MESSAGE_INFO
+    MAVLINK_ASSERT(mavlink_get_message_info_by_name("HEARTBEAT") != NULL);
+    MAVLINK_ASSERT(mavlink_get_message_info_by_id(MAVLINK_MSG_ID_HEARTBEAT) != NULL);
+#endif
+}
 
 static void mavlink_test_hil_controls(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
@@ -303,55 +367,53 @@ static void mavlink_test_hil_gps(uint8_t system_id, uint8_t component_id, mavlin
 #endif
 }
 
-static void mavlink_test_hil_optical_flow(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+static void mavlink_test_imu(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 #ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
     mavlink_status_t *status = mavlink_get_channel_status(MAVLINK_COMM_0);
-        if ((status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) && MAVLINK_MSG_ID_HIL_OPTICAL_FLOW >= 256) {
+        if ((status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) && MAVLINK_MSG_ID_IMU >= 256) {
             return;
         }
 #endif
     mavlink_message_t msg;
         uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
         uint16_t i;
-    mavlink_hil_optical_flow_t packet_in = {
-        93372036854775807ULL,963497880,101.0,129.0,157.0,185.0,213.0,963499128,269.0,19315,3,70
+    mavlink_imu_t packet_in = {
+        17235,17339,17443,17547,17651,17755,17859,17963,18067,18171
     };
-    mavlink_hil_optical_flow_t packet1, packet2;
+    mavlink_imu_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
-        packet1.time_usec = packet_in.time_usec;
-        packet1.integration_time_us = packet_in.integration_time_us;
-        packet1.integrated_x = packet_in.integrated_x;
-        packet1.integrated_y = packet_in.integrated_y;
-        packet1.integrated_xgyro = packet_in.integrated_xgyro;
-        packet1.integrated_ygyro = packet_in.integrated_ygyro;
-        packet1.integrated_zgyro = packet_in.integrated_zgyro;
-        packet1.time_delta_distance_us = packet_in.time_delta_distance_us;
-        packet1.distance = packet_in.distance;
-        packet1.temperature = packet_in.temperature;
-        packet1.sensor_id = packet_in.sensor_id;
-        packet1.quality = packet_in.quality;
+        packet1.gyro_x = packet_in.gyro_x;
+        packet1.gyro_y = packet_in.gyro_y;
+        packet1.gyro_z = packet_in.gyro_z;
+        packet1.accel_x = packet_in.accel_x;
+        packet1.accel_y = packet_in.accel_y;
+        packet1.accel_z = packet_in.accel_z;
+        packet1.mag_x = packet_in.mag_x;
+        packet1.mag_y = packet_in.mag_y;
+        packet1.mag_z = packet_in.mag_z;
+        packet1.temp_mC = packet_in.temp_mC;
         
         
 #ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
         if (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) {
            // cope with extensions
-           memset(MAVLINK_MSG_ID_HIL_OPTICAL_FLOW_MIN_LEN + (char *)&packet1, 0, sizeof(packet1)-MAVLINK_MSG_ID_HIL_OPTICAL_FLOW_MIN_LEN);
+           memset(MAVLINK_MSG_ID_IMU_MIN_LEN + (char *)&packet1, 0, sizeof(packet1)-MAVLINK_MSG_ID_IMU_MIN_LEN);
         }
 #endif
         memset(&packet2, 0, sizeof(packet2));
-    mavlink_msg_hil_optical_flow_encode(system_id, component_id, &msg, &packet1);
-    mavlink_msg_hil_optical_flow_decode(&msg, &packet2);
+    mavlink_msg_imu_encode(system_id, component_id, &msg, &packet1);
+    mavlink_msg_imu_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-    mavlink_msg_hil_optical_flow_pack(system_id, component_id, &msg , packet1.time_usec , packet1.sensor_id , packet1.integration_time_us , packet1.integrated_x , packet1.integrated_y , packet1.integrated_xgyro , packet1.integrated_ygyro , packet1.integrated_zgyro , packet1.temperature , packet1.quality , packet1.time_delta_distance_us , packet1.distance );
-    mavlink_msg_hil_optical_flow_decode(&msg, &packet2);
+    mavlink_msg_imu_pack(system_id, component_id, &msg , packet1.gyro_x , packet1.gyro_y , packet1.gyro_z , packet1.accel_x , packet1.accel_y , packet1.accel_z , packet1.mag_x , packet1.mag_y , packet1.mag_z , packet1.temp_mC );
+    mavlink_msg_imu_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-    mavlink_msg_hil_optical_flow_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.time_usec , packet1.sensor_id , packet1.integration_time_us , packet1.integrated_x , packet1.integrated_y , packet1.integrated_xgyro , packet1.integrated_ygyro , packet1.integrated_zgyro , packet1.temperature , packet1.quality , packet1.time_delta_distance_us , packet1.distance );
-    mavlink_msg_hil_optical_flow_decode(&msg, &packet2);
+    mavlink_msg_imu_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.gyro_x , packet1.gyro_y , packet1.gyro_z , packet1.accel_x , packet1.accel_y , packet1.accel_z , packet1.mag_x , packet1.mag_y , packet1.mag_z , packet1.temp_mC );
+    mavlink_msg_imu_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
@@ -359,73 +421,60 @@ static void mavlink_test_hil_optical_flow(uint8_t system_id, uint8_t component_i
         for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
             comm_send_ch(MAVLINK_COMM_0, buffer[i]);
         }
-    mavlink_msg_hil_optical_flow_decode(last_msg, &packet2);
+    mavlink_msg_imu_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
         
         memset(&packet2, 0, sizeof(packet2));
-    mavlink_msg_hil_optical_flow_send(MAVLINK_COMM_1 , packet1.time_usec , packet1.sensor_id , packet1.integration_time_us , packet1.integrated_x , packet1.integrated_y , packet1.integrated_xgyro , packet1.integrated_ygyro , packet1.integrated_zgyro , packet1.temperature , packet1.quality , packet1.time_delta_distance_us , packet1.distance );
-    mavlink_msg_hil_optical_flow_decode(last_msg, &packet2);
+    mavlink_msg_imu_send(MAVLINK_COMM_1 , packet1.gyro_x , packet1.gyro_y , packet1.gyro_z , packet1.accel_x , packet1.accel_y , packet1.accel_z , packet1.mag_x , packet1.mag_y , packet1.mag_z , packet1.temp_mC );
+    mavlink_msg_imu_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
 #ifdef MAVLINK_HAVE_GET_MESSAGE_INFO
-    MAVLINK_ASSERT(mavlink_get_message_info_by_name("HIL_OPTICAL_FLOW") != NULL);
-    MAVLINK_ASSERT(mavlink_get_message_info_by_id(MAVLINK_MSG_ID_HIL_OPTICAL_FLOW) != NULL);
+    MAVLINK_ASSERT(mavlink_get_message_info_by_name("IMU") != NULL);
+    MAVLINK_ASSERT(mavlink_get_message_info_by_id(MAVLINK_MSG_ID_IMU) != NULL);
 #endif
 }
 
-static void mavlink_test_hil_state_quaternion(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+static void mavlink_test_attitude(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
 #ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
     mavlink_status_t *status = mavlink_get_channel_status(MAVLINK_COMM_0);
-        if ((status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) && MAVLINK_MSG_ID_HIL_STATE_QUATERNION >= 256) {
+        if ((status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) && MAVLINK_MSG_ID_ATTITUDE >= 256) {
             return;
         }
 #endif
     mavlink_message_t msg;
         uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
         uint16_t i;
-    mavlink_hil_state_quaternion_t packet_in = {
-        93372036854775807ULL,{ 73.0, 74.0, 75.0, 76.0 },185.0,213.0,241.0,963499336,963499544,963499752,19731,19835,19939,20043,20147,20251,20355,20459
+    mavlink_attitude_t packet_in = {
+        17.0,45.0,73.0
     };
-    mavlink_hil_state_quaternion_t packet1, packet2;
+    mavlink_attitude_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
-        packet1.time_usec = packet_in.time_usec;
-        packet1.rollspeed = packet_in.rollspeed;
-        packet1.pitchspeed = packet_in.pitchspeed;
-        packet1.yawspeed = packet_in.yawspeed;
-        packet1.lat = packet_in.lat;
-        packet1.lon = packet_in.lon;
-        packet1.alt = packet_in.alt;
-        packet1.vx = packet_in.vx;
-        packet1.vy = packet_in.vy;
-        packet1.vz = packet_in.vz;
-        packet1.ind_airspeed = packet_in.ind_airspeed;
-        packet1.true_airspeed = packet_in.true_airspeed;
-        packet1.xacc = packet_in.xacc;
-        packet1.yacc = packet_in.yacc;
-        packet1.zacc = packet_in.zacc;
+        packet1.pitch_degree = packet_in.pitch_degree;
+        packet1.roll_degree = packet_in.roll_degree;
+        packet1.heading_degree = packet_in.heading_degree;
         
-        mav_array_memcpy(packet1.attitude_quaternion, packet_in.attitude_quaternion, sizeof(float)*4);
         
 #ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
         if (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) {
            // cope with extensions
-           memset(MAVLINK_MSG_ID_HIL_STATE_QUATERNION_MIN_LEN + (char *)&packet1, 0, sizeof(packet1)-MAVLINK_MSG_ID_HIL_STATE_QUATERNION_MIN_LEN);
+           memset(MAVLINK_MSG_ID_ATTITUDE_MIN_LEN + (char *)&packet1, 0, sizeof(packet1)-MAVLINK_MSG_ID_ATTITUDE_MIN_LEN);
         }
 #endif
         memset(&packet2, 0, sizeof(packet2));
-    mavlink_msg_hil_state_quaternion_encode(system_id, component_id, &msg, &packet1);
-    mavlink_msg_hil_state_quaternion_decode(&msg, &packet2);
+    mavlink_msg_attitude_encode(system_id, component_id, &msg, &packet1);
+    mavlink_msg_attitude_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-    mavlink_msg_hil_state_quaternion_pack(system_id, component_id, &msg , packet1.time_usec , packet1.attitude_quaternion , packet1.rollspeed , packet1.pitchspeed , packet1.yawspeed , packet1.lat , packet1.lon , packet1.alt , packet1.vx , packet1.vy , packet1.vz , packet1.ind_airspeed , packet1.true_airspeed , packet1.xacc , packet1.yacc , packet1.zacc );
-    mavlink_msg_hil_state_quaternion_decode(&msg, &packet2);
+    mavlink_msg_attitude_pack(system_id, component_id, &msg , packet1.pitch_degree , packet1.roll_degree , packet1.heading_degree );
+    mavlink_msg_attitude_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-    mavlink_msg_hil_state_quaternion_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.time_usec , packet1.attitude_quaternion , packet1.rollspeed , packet1.pitchspeed , packet1.yawspeed , packet1.lat , packet1.lon , packet1.alt , packet1.vx , packet1.vy , packet1.vz , packet1.ind_airspeed , packet1.true_airspeed , packet1.xacc , packet1.yacc , packet1.zacc );
-    mavlink_msg_hil_state_quaternion_decode(&msg, &packet2);
+    mavlink_msg_attitude_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.pitch_degree , packet1.roll_degree , packet1.heading_degree );
+    mavlink_msg_attitude_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
@@ -433,28 +482,226 @@ static void mavlink_test_hil_state_quaternion(uint8_t system_id, uint8_t compone
         for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
             comm_send_ch(MAVLINK_COMM_0, buffer[i]);
         }
-    mavlink_msg_hil_state_quaternion_decode(last_msg, &packet2);
+    mavlink_msg_attitude_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
         
         memset(&packet2, 0, sizeof(packet2));
-    mavlink_msg_hil_state_quaternion_send(MAVLINK_COMM_1 , packet1.time_usec , packet1.attitude_quaternion , packet1.rollspeed , packet1.pitchspeed , packet1.yawspeed , packet1.lat , packet1.lon , packet1.alt , packet1.vx , packet1.vy , packet1.vz , packet1.ind_airspeed , packet1.true_airspeed , packet1.xacc , packet1.yacc , packet1.zacc );
-    mavlink_msg_hil_state_quaternion_decode(last_msg, &packet2);
+    mavlink_msg_attitude_send(MAVLINK_COMM_1 , packet1.pitch_degree , packet1.roll_degree , packet1.heading_degree );
+    mavlink_msg_attitude_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
 #ifdef MAVLINK_HAVE_GET_MESSAGE_INFO
-    MAVLINK_ASSERT(mavlink_get_message_info_by_name("HIL_STATE_QUATERNION") != NULL);
-    MAVLINK_ASSERT(mavlink_get_message_info_by_id(MAVLINK_MSG_ID_HIL_STATE_QUATERNION) != NULL);
+    MAVLINK_ASSERT(mavlink_get_message_info_by_name("ATTITUDE") != NULL);
+    MAVLINK_ASSERT(mavlink_get_message_info_by_id(MAVLINK_MSG_ID_ATTITUDE) != NULL);
+#endif
+}
+
+static void mavlink_test_target_attitude(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+    mavlink_status_t *status = mavlink_get_channel_status(MAVLINK_COMM_0);
+        if ((status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) && MAVLINK_MSG_ID_TARGET_ATTITUDE >= 256) {
+            return;
+        }
+#endif
+    mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+    mavlink_target_attitude_t packet_in = {
+        17.0,45.0,73.0,101.0,129.0,157.0
+    };
+    mavlink_target_attitude_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        packet1.pitch_degree = packet_in.pitch_degree;
+        packet1.roll_degree = packet_in.roll_degree;
+        packet1.heading_degree = packet_in.heading_degree;
+        packet1.pitch_dps = packet_in.pitch_dps;
+        packet1.roll_dps = packet_in.roll_dps;
+        packet1.yaw_dps = packet_in.yaw_dps;
+        
+        
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+        if (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) {
+           // cope with extensions
+           memset(MAVLINK_MSG_ID_TARGET_ATTITUDE_MIN_LEN + (char *)&packet1, 0, sizeof(packet1)-MAVLINK_MSG_ID_TARGET_ATTITUDE_MIN_LEN);
+        }
+#endif
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_target_attitude_encode(system_id, component_id, &msg, &packet1);
+    mavlink_msg_target_attitude_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_target_attitude_pack(system_id, component_id, &msg , packet1.pitch_degree , packet1.roll_degree , packet1.heading_degree , packet1.pitch_dps , packet1.roll_dps , packet1.yaw_dps );
+    mavlink_msg_target_attitude_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_target_attitude_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.pitch_degree , packet1.roll_degree , packet1.heading_degree , packet1.pitch_dps , packet1.roll_dps , packet1.yaw_dps );
+    mavlink_msg_target_attitude_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+            comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+    mavlink_msg_target_attitude_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_target_attitude_send(MAVLINK_COMM_1 , packet1.pitch_degree , packet1.roll_degree , packet1.heading_degree , packet1.pitch_dps , packet1.roll_dps , packet1.yaw_dps );
+    mavlink_msg_target_attitude_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+#ifdef MAVLINK_HAVE_GET_MESSAGE_INFO
+    MAVLINK_ASSERT(mavlink_get_message_info_by_name("TARGET_ATTITUDE") != NULL);
+    MAVLINK_ASSERT(mavlink_get_message_info_by_id(MAVLINK_MSG_ID_TARGET_ATTITUDE) != NULL);
+#endif
+}
+
+static void mavlink_test_gnss(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+    mavlink_status_t *status = mavlink_get_channel_status(MAVLINK_COMM_0);
+        if ((status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) && MAVLINK_MSG_ID_GNSS >= 256) {
+            return;
+        }
+#endif
+    mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+    mavlink_gnss_t packet_in = {
+        963497464,963497672,963497880,963498088,963498296,963498504,963498712,18691,18795,101,168
+    };
+    mavlink_gnss_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        packet1.latitude = packet_in.latitude;
+        packet1.longitude = packet_in.longitude;
+        packet1.altitude_mm = packet_in.altitude_mm;
+        packet1.vel_north_mms = packet_in.vel_north_mms;
+        packet1.vel_east_mms = packet_in.vel_east_mms;
+        packet1.vel_down_mms = packet_in.vel_down_mms;
+        packet1.cog_degree = packet_in.cog_degree;
+        packet1.hdop = packet_in.hdop;
+        packet1.vdop = packet_in.vdop;
+        packet1.fix = packet_in.fix;
+        packet1.sat_count = packet_in.sat_count;
+        
+        
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+        if (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) {
+           // cope with extensions
+           memset(MAVLINK_MSG_ID_GNSS_MIN_LEN + (char *)&packet1, 0, sizeof(packet1)-MAVLINK_MSG_ID_GNSS_MIN_LEN);
+        }
+#endif
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_gnss_encode(system_id, component_id, &msg, &packet1);
+    mavlink_msg_gnss_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_gnss_pack(system_id, component_id, &msg , packet1.fix , packet1.sat_count , packet1.latitude , packet1.longitude , packet1.altitude_mm , packet1.vel_north_mms , packet1.vel_east_mms , packet1.vel_down_mms , packet1.cog_degree , packet1.hdop , packet1.vdop );
+    mavlink_msg_gnss_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_gnss_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.fix , packet1.sat_count , packet1.latitude , packet1.longitude , packet1.altitude_mm , packet1.vel_north_mms , packet1.vel_east_mms , packet1.vel_down_mms , packet1.cog_degree , packet1.hdop , packet1.vdop );
+    mavlink_msg_gnss_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+            comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+    mavlink_msg_gnss_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_gnss_send(MAVLINK_COMM_1 , packet1.fix , packet1.sat_count , packet1.latitude , packet1.longitude , packet1.altitude_mm , packet1.vel_north_mms , packet1.vel_east_mms , packet1.vel_down_mms , packet1.cog_degree , packet1.hdop , packet1.vdop );
+    mavlink_msg_gnss_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+#ifdef MAVLINK_HAVE_GET_MESSAGE_INFO
+    MAVLINK_ASSERT(mavlink_get_message_info_by_name("GNSS") != NULL);
+    MAVLINK_ASSERT(mavlink_get_message_info_by_id(MAVLINK_MSG_ID_GNSS) != NULL);
+#endif
+}
+
+static void mavlink_test_barometer(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
+{
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+    mavlink_status_t *status = mavlink_get_channel_status(MAVLINK_COMM_0);
+        if ((status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) && MAVLINK_MSG_ID_BAROMETER >= 256) {
+            return;
+        }
+#endif
+    mavlink_message_t msg;
+        uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
+        uint16_t i;
+    mavlink_barometer_t packet_in = {
+        17235,17339,17443
+    };
+    mavlink_barometer_t packet1, packet2;
+        memset(&packet1, 0, sizeof(packet1));
+        packet1.pressure_pascal = packet_in.pressure_pascal;
+        packet1.temperature_c = packet_in.temperature_c;
+        packet1.altitude_m = packet_in.altitude_m;
+        
+        
+#ifdef MAVLINK_STATUS_FLAG_OUT_MAVLINK1
+        if (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) {
+           // cope with extensions
+           memset(MAVLINK_MSG_ID_BAROMETER_MIN_LEN + (char *)&packet1, 0, sizeof(packet1)-MAVLINK_MSG_ID_BAROMETER_MIN_LEN);
+        }
+#endif
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_barometer_encode(system_id, component_id, &msg, &packet1);
+    mavlink_msg_barometer_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_barometer_pack(system_id, component_id, &msg , packet1.pressure_pascal , packet1.temperature_c , packet1.altitude_m );
+    mavlink_msg_barometer_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_barometer_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.pressure_pascal , packet1.temperature_c , packet1.altitude_m );
+    mavlink_msg_barometer_decode(&msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+        memset(&packet2, 0, sizeof(packet2));
+        mavlink_msg_to_send_buffer(buffer, &msg);
+        for (i=0; i<mavlink_msg_get_send_buffer_length(&msg); i++) {
+            comm_send_ch(MAVLINK_COMM_0, buffer[i]);
+        }
+    mavlink_msg_barometer_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+        
+        memset(&packet2, 0, sizeof(packet2));
+    mavlink_msg_barometer_send(MAVLINK_COMM_1 , packet1.pressure_pascal , packet1.temperature_c , packet1.altitude_m );
+    mavlink_msg_barometer_decode(last_msg, &packet2);
+        MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
+
+#ifdef MAVLINK_HAVE_GET_MESSAGE_INFO
+    MAVLINK_ASSERT(mavlink_get_message_info_by_name("BAROMETER") != NULL);
+    MAVLINK_ASSERT(mavlink_get_message_info_by_id(MAVLINK_MSG_ID_BAROMETER) != NULL);
 #endif
 }
 
 static void mavlink_test_Ikarus_messages(uint8_t system_id, uint8_t component_id, mavlink_message_t *last_msg)
 {
+    mavlink_test_heartbeat(system_id, component_id, last_msg);
     mavlink_test_hil_controls(system_id, component_id, last_msg);
     mavlink_test_hil_actuator_controls(system_id, component_id, last_msg);
     mavlink_test_hil_sensor(system_id, component_id, last_msg);
     mavlink_test_hil_gps(system_id, component_id, last_msg);
-    mavlink_test_hil_optical_flow(system_id, component_id, last_msg);
-    mavlink_test_hil_state_quaternion(system_id, component_id, last_msg);
+    mavlink_test_imu(system_id, component_id, last_msg);
+    mavlink_test_attitude(system_id, component_id, last_msg);
+    mavlink_test_target_attitude(system_id, component_id, last_msg);
+    mavlink_test_gnss(system_id, component_id, last_msg);
+    mavlink_test_barometer(system_id, component_id, last_msg);
 }
 
 #ifdef __cplusplus

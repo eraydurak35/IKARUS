@@ -25,5 +25,6 @@ idf_component_register(SRCS
 "gpio.c" 
 "main.c"
 "ibus.c"
+"sbus.c"
 "hitl.c"
 INCLUDE_DIRS ".")

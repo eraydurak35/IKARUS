@@ -22,6 +22,9 @@
 #define RC_CH_13                   12
 #define RC_CH_14                   13
 
+#define SERIAL_SBUS                0
+#define SERIAL_IBUS                1
+
 // Araç tipi seçenekleri
 #define CRAFT_TYPE_QUADCOPTER      1
 #define CRAFT_TYPE_PLANE           2
@@ -58,11 +61,12 @@
 //--------------------------------------------------------------//
 //                  DONANIM KONFIGÜRASYONU                      //
 //--------------------------------------------------------------//
-#define SETUP_ENABLE_HITL         (true)                        // 
+#define SETUP_ENABLE_HITL         (false)                        // 
 #define SETUP_USE_BLACKBOX        (false)                       // "true" --> "ARM" kayıt başlar, "DISARM" kayıt durur. "false" --> devre dışı bırakır.
 #define SETUP_MAGNETO_TYPE        (MAG_NONE)                    // Manyetik sensör seçimi.
 #define SETUP_CRAFT_TYPE          (CRAFT_TYPE_QUADCOPTER)       // Araç tipi seçimi
-#define SETUP_COMM_TYPE           (USE_WEBCOMM)                 // Kontrol methodu seçimi
+#define SETUP_COMM_TYPE           (USE_RC_LINK)                 // Kontrol methodu seçimi
+#define SETUP_RC_PROTOCOL         (SERIAL_SBUS)
 #define SETUP_MOTOR_TYPE          (MOTOR_CORELESS)              // Motor kontrol sinyali türü seçimi
 #define SETUP_GNSS_TYPE           (GNSS_NONE)                   // GNSS alıcı seçimi
 #define SETUP_OPT_FLOW_TYPE       (OPT_FLOW_NONE)               // Optik akış sensörü seçimi
@@ -145,7 +149,7 @@
 #define RC_YAW_CH                 (RC_CH_4)
 #define RC_THROTTLE_CH            (RC_CH_3)
 #define RC_ARM_CH                 (RC_CH_5)
-#define RC_ALT_HOLD_CH            (RC_CH_8)
+#define RC_ALT_HOLD_CH            (RC_CH_9) // Büyük dronda 8 olacak
 #define RC_RTH_CH                 (RC_CH_6)
 #define RC_POS_HOLD_CH            (RC_CH_7)
 #define RC_WAYPOINT_CH            (RC_CH_7)
