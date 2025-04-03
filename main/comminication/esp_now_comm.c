@@ -6,13 +6,11 @@
 #include "esp_timer.h"
 #include <math.h>
 #include "storage/nv_storage.h"
-#include "../mavlink/Ikarus_messages/mavlink.h"
-#include "streams/stream.h"
-#include "streams/imu.h"
 
 static esp_now_peer_info_t peerInfo;
-
-static config_t *config_ptr = NULL;
+static const uint8_t drone_mac_address[6] = {0x04, 0x61, 0x05, 0x05, 0x3A, 0xE4};
+const uint8_t ground_station_mac_address[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+/* static config_t *config_ptr = NULL;
 static waypoint_t *waypoint_ptr = NULL;
 static telemetry_t *telemetry_ptr = NULL;
 static flight_t *flight_ptr = NULL;
@@ -29,17 +27,15 @@ static const uint8_t *mag_data;
 static const uint8_t *acc_data;
 static gamepad_t *gamepad_ptr = NULL;
 
-static uint8_t mavlink_buffer[MAVLINK_MAX_PACKET_LEN] = {0};
-static mavlink_message_t mavlink_msg;
-static uint8_t recieved_command_flag;
+static uint8_t recieved_command_flag; */
 
 static void espnow_receive_cb(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len);
 static void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
-static void parse_mission_data(const uint8_t *data, uint8_t len);
-static void respond_to_requests();
+//static void parse_mission_data(const uint8_t *data, uint8_t len);
+//static void respond_to_requests();
 
 
-void esp_now_comm_init(config_t *cfg, waypoint_t *wp, uint8_t *mtr_tst, telemetry_t *telem, flight_t *flt, states_t *stt, imu_t *imu, magnetometer_t *mag, bmp390_t *baro, gnss_t *gnss, pmw3901_t *flow, range_finder_t *range, target_t *target, gamepad_t *gmpd)
+void esp_now_comm_init()
 {
     wifi_init_config_t wifi_cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&wifi_cfg));
@@ -59,27 +55,12 @@ void esp_now_comm_init(config_t *cfg, waypoint_t *wp, uint8_t *mtr_tst, telemetr
     peerInfo.channel = 0;
     peerInfo.encrypt = false;
     esp_now_add_peer(&peerInfo);
-
-    config_ptr = cfg;
-    waypoint_ptr = wp;
-    motor_test_num_ptr = mtr_tst;
-    gamepad_ptr = gmpd;
-    telemetry_ptr = telem;
-    flight_ptr = flt;
-    state_ptr = stt;
-    imu_ptr = imu;
-    mag_ptr = mag;
-    baro_ptr = baro;
-    target_ptr = target;
-    gnss_ptr = gnss;
-    flow_ptr = flow;
-    range_ptr = range;
 }
 
 void esp_now_send_telemetry()
 {
 
-    stream_message_imu(&mavlink_msg, mavlink_buffer, state_ptr, imu_ptr, mag_ptr);
+    /* stream_message_imu(&mavlink_msg, mavlink_buffer, state_ptr, imu_ptr, mag_ptr); */
 /*     telemetry_ptr->battery_voltage = flight_ptr->battery_voltage;
     telemetry_ptr->pitch = state_ptr->pitch_deg;// mavlink
     telemetry_ptr->roll = state_ptr->roll_deg;// mavlink
@@ -156,10 +137,10 @@ void esp_now_send_telemetry()
     memcpy(buffer + 1, (uint8_t *)telemetry_ptr, sizeof(telemetry_t));
     ESP_ERROR_CHECK(esp_now_send(ground_station_mac_address, buffer, sizeof(buffer))); */
 
-    respond_to_requests();
+    //respond_to_requests();
 }
 
-static void respond_to_requests()
+/* static void respond_to_requests()
 {
     if (recieved_command_flag == 3)
     {
@@ -211,10 +192,10 @@ void esp_now_send_motor_test_result(float *result)
     buffer[0] = MTR_TEST_HEADER;
     memcpy(buffer + 1, result, sizeof(float) * 4);
     ESP_ERROR_CHECK(esp_now_send(ground_station_mac_address, buffer, sizeof(buffer)));
-}
+} */
 static void espnow_receive_cb(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len)
 {
-    
+/*     
     if (data[0] == 0xFF && len == sizeof(gamepad_t) + 1)
     {
         memcpy(gamepad_ptr, data + 1, sizeof(gamepad_t));
@@ -249,14 +230,14 @@ static void espnow_receive_cb(const esp_now_recv_info_t *recv_info, const uint8_
     {
         recieved_command_flag = 6;
         acc_data = data;
-    }
+    } */
 
 }
 static void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
 }
 
-const uint8_t *get_mag_data()
+/* const uint8_t *get_mag_data()
 {
     return mag_data;
 }
@@ -295,11 +276,10 @@ static void parse_mission_data(const uint8_t *data, uint8_t len)
 
         storage_save(waypoint_ptr, MISSION_DATA);
 
-        /*      
+            
         for (int i = 0; i < 50; i++) 
         {
             printf("Waypoint %d: Enlem = %ld, Boylam = %ld, Yükseklik = %u\n", i, waypoint_ptr->latitude[i], waypoint_ptr->longitude[i], waypoint_ptr->altitude[i]);
         }  
-        */
     }
-}
+} */

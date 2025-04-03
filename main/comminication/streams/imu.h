@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../mavlink/Ikarus_messages/mavlink.h"
-#include "stream.h"
+#include "../esp_now_comm.h"
 #include "typedefs.h"
 
 void stream_message_imu(mavlink_message_t *_msg, uint8_t *_buffer, states_t *_state, imu_t *_imu, magnetometer_t *_mag)

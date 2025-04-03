@@ -50,6 +50,7 @@
 #include "sbus.h"
 #include "gpio.h"
 #include "hitl.h"
+#include "comminication/streams/stream.h"
 
 static esp_timer_handle_t timer1;
 static TaskHandle_t task1_handler;
@@ -456,11 +457,11 @@ void task_5(void *pvParameters)
 #if SETUP_COMM_TYPE == USE_RC_LINK
 void task_6(void *pvParameters)
 {
-    static uint8_t flg2;
-    esp_now_comm_init(&config, &waypoint, &flg2, &telemetry, &flight, &states, &imu, &mag, &barometer, &gnss, &flow, &range, &target, &gamepad);
+    esp_now_comm_init();
+    start_mavlink_stream(&config, &waypoint, &telemetry, &flight, &states, &imu, &mag, &barometer, &gnss, &flow, &range, &target, &gamepad);
     while (1)
     {
-        esp_now_send_telemetry();
+        run_mavlink_stream();
         vTaskDelay(100);
     }
 }
