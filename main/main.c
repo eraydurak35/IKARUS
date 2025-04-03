@@ -458,11 +458,11 @@ void task_5(void *pvParameters)
 void task_6(void *pvParameters)
 {
     esp_now_comm_init();
-    start_mavlink_stream(&config, &waypoint, &telemetry, &flight, &states, &imu, &mag, &barometer, &gnss, &flow, &range, &target, &gamepad);
+    start_mavlink_stream(&config, &waypoint, &flight, &states, &imu, &mag, &barometer, &gnss, &flow, &range, &target, &gamepad);
     while (1)
     {
         run_mavlink_stream();
-        vTaskDelay(100);
+        vTaskDelay(10);
     }
 }
 

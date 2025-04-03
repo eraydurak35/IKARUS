@@ -10,29 +10,8 @@
 static esp_now_peer_info_t peerInfo;
 static const uint8_t drone_mac_address[6] = {0x04, 0x61, 0x05, 0x05, 0x3A, 0xE4};
 const uint8_t ground_station_mac_address[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-/* static config_t *config_ptr = NULL;
-static waypoint_t *waypoint_ptr = NULL;
-static telemetry_t *telemetry_ptr = NULL;
-static flight_t *flight_ptr = NULL;
-static states_t *state_ptr = NULL;
-static imu_t *imu_ptr = NULL;
-static magnetometer_t *mag_ptr = NULL;
-static bmp390_t *baro_ptr = NULL;
-static target_t *target_ptr = NULL;
-static gnss_t *gnss_ptr = NULL;
-static pmw3901_t *flow_ptr = NULL;
-static range_finder_t *range_ptr = NULL;
-static uint8_t *motor_test_num_ptr = NULL;
-static const uint8_t *mag_data;
-static const uint8_t *acc_data;
-static gamepad_t *gamepad_ptr = NULL;
-
-static uint8_t recieved_command_flag; */
-
 static void espnow_receive_cb(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len);
 static void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
-//static void parse_mission_data(const uint8_t *data, uint8_t len);
-//static void respond_to_requests();
 
 
 void esp_now_comm_init()
@@ -57,11 +36,9 @@ void esp_now_comm_init()
     esp_now_add_peer(&peerInfo);
 }
 
-void esp_now_send_telemetry()
+/* void esp_now_send_telemetry()
 {
-
-    /* stream_message_imu(&mavlink_msg, mavlink_buffer, state_ptr, imu_ptr, mag_ptr); */
-/*     telemetry_ptr->battery_voltage = flight_ptr->battery_voltage;
+    telemetry_ptr->battery_voltage = flight_ptr->battery_voltage;
     telemetry_ptr->pitch = state_ptr->pitch_deg;// mavlink
     telemetry_ptr->roll = state_ptr->roll_deg;// mavlink
     telemetry_ptr->heading = state_ptr->heading_deg;// mavlink
@@ -78,24 +55,32 @@ void esp_now_send_telemetry()
     telemetry_ptr->barometer_pressure = baro_ptr->press * 10.0f;// mavlink
     telemetry_ptr->barometer_temperature = baro_ptr->temp * 100.0f;// mavlink
     telemetry_ptr->altitude = baro_ptr->altitude_m * 100.0f;// mavlink
-    telemetry_ptr->altitude_calibrated = state_ptr->altitude_m * 100.0f;
-    telemetry_ptr->velocity_x_ms = state_ptr->vel_forward_ms * 1000.0f;
-    telemetry_ptr->velocity_y_ms = state_ptr->vel_right_ms * 1000.0f;
-    telemetry_ptr->velocity_z_ms = state_ptr->vel_up_ms * 1000.0f;
+    telemetry_ptr->altitude_calibrated = state_ptr->altitude_m * 100.0f;// mavlink
+
+
+    telemetry_ptr->velocity_x_ms = state_ptr->vel_forward_ms * 1000.0f;// mavlink
+    telemetry_ptr->velocity_y_ms = state_ptr->vel_right_ms * 1000.0f;// mavlink
+    telemetry_ptr->velocity_z_ms = state_ptr->vel_up_ms * 1000.0f;// mavlink
+
+
     telemetry_ptr->target_pitch = target_ptr->pitch_deg;// mavlink
     telemetry_ptr->target_roll = target_ptr->roll_deg;// mavlink
     telemetry_ptr->target_heading = target_ptr->heading_deg;// mavlink
     telemetry_ptr->target_pitch_dps = target_ptr->pitch_dps;// mavlink
     telemetry_ptr->target_roll_dps = target_ptr->roll_dps;// mavlink
     telemetry_ptr->target_yaw_dps = target_ptr->yaw_dps;// mavlink
-    telemetry_ptr->tof_distance = range_ptr->range_cm;
-    telemetry_ptr->target_altitude = target_ptr->altitude;
-    telemetry_ptr->target_velocity_x_ms = target_ptr->velocity_x_ms;
-    telemetry_ptr->target_velocity_y_ms = target_ptr->velocity_y_ms;
-    telemetry_ptr->target_velocity_z_ms = target_ptr->velocity_z_ms;
-    telemetry_ptr->flow_quality = flow_ptr->quality;
-    telemetry_ptr->flow_x_velocity = flow_ptr->velocity_x_ms * 1000.0f;
-    telemetry_ptr->flow_y_velocity = flow_ptr->velocity_y_ms * 1000.0f;
+
+    telemetry_ptr->tof_distance = range_ptr->range_cm;// mavlink
+
+
+    telemetry_ptr->target_altitude = target_ptr->altitude;// mavlink
+    telemetry_ptr->target_velocity_x_ms = target_ptr->velocity_x_ms;// mavlink
+    telemetry_ptr->target_velocity_y_ms = target_ptr->velocity_y_ms;// mavlink
+    telemetry_ptr->target_velocity_z_ms = target_ptr->velocity_z_ms;// mavlink
+
+    telemetry_ptr->flow_quality = flow_ptr->quality;// mavlink
+    telemetry_ptr->flow_x_velocity = flow_ptr->velocity_x_ms * 1000.0f;// mavlink
+    telemetry_ptr->flow_y_velocity = flow_ptr->velocity_y_ms * 1000.0f;// mavlink
 
     telemetry_ptr->gps_fix = gnss_ptr->fix;// mavlink
     telemetry_ptr->gps_satCount = gnss_ptr->satCount;// mavlink
@@ -109,10 +94,10 @@ void esp_now_send_telemetry()
     telemetry_ptr->gps_hdop = gnss_ptr->hdop;// mavlink
     telemetry_ptr->gps_vdop = gnss_ptr->vdop;// mavlink
     //telemetry_ptr->is_gnss_sanity_check_ok = gnss_sanity_check();
-    telemetry_ptr->velocity_ms_2d = sqrtf((state_ptr->vel_forward_ms * state_ptr->vel_forward_ms) + (state_ptr->vel_right_ms * state_ptr->vel_right_ms));
-    telemetry_ptr->throttle = target_ptr->throttle;
-    telemetry_ptr->target_latitude = target_ptr->latitude;
-    telemetry_ptr->target_longitude = target_ptr->longitude;
+    telemetry_ptr->velocity_ms_2d = sqrtf((state_ptr->vel_forward_ms * state_ptr->vel_forward_ms) + (state_ptr->vel_right_ms * state_ptr->vel_right_ms));// mavlink
+    telemetry_ptr->throttle = target_ptr->throttle;// mavlink
+    telemetry_ptr->target_latitude = target_ptr->latitude;// mavlink
+    telemetry_ptr->target_longitude = target_ptr->longitude;// mavlink
 
     // 0 full manual 1 altitude_hold 2 position_hold 3 alt+pos_hold 4 alt+pos+waypoint
     if (flight_ptr->waypoint_mission_status == 1)
@@ -135,10 +120,10 @@ void esp_now_send_telemetry()
     uint8_t buffer[sizeof(telemetry_t) + 1];
     buffer[0] = TELEM_HEADER;
     memcpy(buffer + 1, (uint8_t *)telemetry_ptr, sizeof(telemetry_t));
-    ESP_ERROR_CHECK(esp_now_send(ground_station_mac_address, buffer, sizeof(buffer))); */
+    ESP_ERROR_CHECK(esp_now_send(ground_station_mac_address, buffer, sizeof(buffer))); 
 
     //respond_to_requests();
-}
+} */
 
 /* static void respond_to_requests()
 {

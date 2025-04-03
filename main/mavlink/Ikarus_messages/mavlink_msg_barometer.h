@@ -5,18 +5,18 @@
 
 
 typedef struct __mavlink_barometer_t {
- uint16_t pressure_pascal; /*<  Barometer pressure in pascal * 10*/
- int16_t temperature_c; /*<  Barometer temperature in c * 100*/
- int16_t altitude_m; /*<  Barometer altitude * 100*/
+ float pressure_pascal; /*<  Barometer pressure in pascal * 10*/
+ float temperature_c; /*<  Barometer temperature in c * 100*/
+ float altitude_m; /*<  Barometer altitude * 100*/
 } mavlink_barometer_t;
 
-#define MAVLINK_MSG_ID_BAROMETER_LEN 6
-#define MAVLINK_MSG_ID_BAROMETER_MIN_LEN 6
-#define MAVLINK_MSG_ID_120_LEN 6
-#define MAVLINK_MSG_ID_120_MIN_LEN 6
+#define MAVLINK_MSG_ID_BAROMETER_LEN 12
+#define MAVLINK_MSG_ID_BAROMETER_MIN_LEN 12
+#define MAVLINK_MSG_ID_120_LEN 12
+#define MAVLINK_MSG_ID_120_MIN_LEN 12
 
-#define MAVLINK_MSG_ID_BAROMETER_CRC 10
-#define MAVLINK_MSG_ID_120_CRC 10
+#define MAVLINK_MSG_ID_BAROMETER_CRC 222
+#define MAVLINK_MSG_ID_120_CRC 222
 
 
 
@@ -25,18 +25,18 @@ typedef struct __mavlink_barometer_t {
     120, \
     "BAROMETER", \
     3, \
-    {  { "pressure_pascal", NULL, MAVLINK_TYPE_UINT16_T, 0, 0, offsetof(mavlink_barometer_t, pressure_pascal) }, \
-         { "temperature_c", NULL, MAVLINK_TYPE_INT16_T, 0, 2, offsetof(mavlink_barometer_t, temperature_c) }, \
-         { "altitude_m", NULL, MAVLINK_TYPE_INT16_T, 0, 4, offsetof(mavlink_barometer_t, altitude_m) }, \
+    {  { "pressure_pascal", NULL, MAVLINK_TYPE_FLOAT, 0, 0, offsetof(mavlink_barometer_t, pressure_pascal) }, \
+         { "temperature_c", NULL, MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_barometer_t, temperature_c) }, \
+         { "altitude_m", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_barometer_t, altitude_m) }, \
          } \
 }
 #else
 #define MAVLINK_MESSAGE_INFO_BAROMETER { \
     "BAROMETER", \
     3, \
-    {  { "pressure_pascal", NULL, MAVLINK_TYPE_UINT16_T, 0, 0, offsetof(mavlink_barometer_t, pressure_pascal) }, \
-         { "temperature_c", NULL, MAVLINK_TYPE_INT16_T, 0, 2, offsetof(mavlink_barometer_t, temperature_c) }, \
-         { "altitude_m", NULL, MAVLINK_TYPE_INT16_T, 0, 4, offsetof(mavlink_barometer_t, altitude_m) }, \
+    {  { "pressure_pascal", NULL, MAVLINK_TYPE_FLOAT, 0, 0, offsetof(mavlink_barometer_t, pressure_pascal) }, \
+         { "temperature_c", NULL, MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_barometer_t, temperature_c) }, \
+         { "altitude_m", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_barometer_t, altitude_m) }, \
          } \
 }
 #endif
@@ -53,13 +53,13 @@ typedef struct __mavlink_barometer_t {
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_barometer_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
-                               uint16_t pressure_pascal, int16_t temperature_c, int16_t altitude_m)
+                               float pressure_pascal, float temperature_c, float altitude_m)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_BAROMETER_LEN];
-    _mav_put_uint16_t(buf, 0, pressure_pascal);
-    _mav_put_int16_t(buf, 2, temperature_c);
-    _mav_put_int16_t(buf, 4, altitude_m);
+    _mav_put_float(buf, 0, pressure_pascal);
+    _mav_put_float(buf, 4, temperature_c);
+    _mav_put_float(buf, 8, altitude_m);
 
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_BAROMETER_LEN);
 #else
@@ -88,13 +88,13 @@ static inline uint16_t mavlink_msg_barometer_pack(uint8_t system_id, uint8_t com
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_barometer_pack_status(uint8_t system_id, uint8_t component_id, mavlink_status_t *_status, mavlink_message_t* msg,
-                               uint16_t pressure_pascal, int16_t temperature_c, int16_t altitude_m)
+                               float pressure_pascal, float temperature_c, float altitude_m)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_BAROMETER_LEN];
-    _mav_put_uint16_t(buf, 0, pressure_pascal);
-    _mav_put_int16_t(buf, 2, temperature_c);
-    _mav_put_int16_t(buf, 4, altitude_m);
+    _mav_put_float(buf, 0, pressure_pascal);
+    _mav_put_float(buf, 4, temperature_c);
+    _mav_put_float(buf, 8, altitude_m);
 
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_BAROMETER_LEN);
 #else
@@ -127,13 +127,13 @@ static inline uint16_t mavlink_msg_barometer_pack_status(uint8_t system_id, uint
  */
 static inline uint16_t mavlink_msg_barometer_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
                                mavlink_message_t* msg,
-                                   uint16_t pressure_pascal,int16_t temperature_c,int16_t altitude_m)
+                                   float pressure_pascal,float temperature_c,float altitude_m)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_BAROMETER_LEN];
-    _mav_put_uint16_t(buf, 0, pressure_pascal);
-    _mav_put_int16_t(buf, 2, temperature_c);
-    _mav_put_int16_t(buf, 4, altitude_m);
+    _mav_put_float(buf, 0, pressure_pascal);
+    _mav_put_float(buf, 4, temperature_c);
+    _mav_put_float(buf, 8, altitude_m);
 
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_BAROMETER_LEN);
 #else
@@ -200,13 +200,13 @@ static inline uint16_t mavlink_msg_barometer_encode_status(uint8_t system_id, ui
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
-static inline void mavlink_msg_barometer_send(mavlink_channel_t chan, uint16_t pressure_pascal, int16_t temperature_c, int16_t altitude_m)
+static inline void mavlink_msg_barometer_send(mavlink_channel_t chan, float pressure_pascal, float temperature_c, float altitude_m)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_BAROMETER_LEN];
-    _mav_put_uint16_t(buf, 0, pressure_pascal);
-    _mav_put_int16_t(buf, 2, temperature_c);
-    _mav_put_int16_t(buf, 4, altitude_m);
+    _mav_put_float(buf, 0, pressure_pascal);
+    _mav_put_float(buf, 4, temperature_c);
+    _mav_put_float(buf, 8, altitude_m);
 
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_BAROMETER, buf, MAVLINK_MSG_ID_BAROMETER_MIN_LEN, MAVLINK_MSG_ID_BAROMETER_LEN, MAVLINK_MSG_ID_BAROMETER_CRC);
 #else
@@ -241,13 +241,13 @@ static inline void mavlink_msg_barometer_send_struct(mavlink_channel_t chan, con
   is usually the receive buffer for the channel, and allows a reply to an
   incoming message with minimum stack space usage.
  */
-static inline void mavlink_msg_barometer_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint16_t pressure_pascal, int16_t temperature_c, int16_t altitude_m)
+static inline void mavlink_msg_barometer_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  float pressure_pascal, float temperature_c, float altitude_m)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char *buf = (char *)msgbuf;
-    _mav_put_uint16_t(buf, 0, pressure_pascal);
-    _mav_put_int16_t(buf, 2, temperature_c);
-    _mav_put_int16_t(buf, 4, altitude_m);
+    _mav_put_float(buf, 0, pressure_pascal);
+    _mav_put_float(buf, 4, temperature_c);
+    _mav_put_float(buf, 8, altitude_m);
 
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_BAROMETER, buf, MAVLINK_MSG_ID_BAROMETER_MIN_LEN, MAVLINK_MSG_ID_BAROMETER_LEN, MAVLINK_MSG_ID_BAROMETER_CRC);
 #else
@@ -271,9 +271,9 @@ static inline void mavlink_msg_barometer_send_buf(mavlink_message_t *msgbuf, mav
  *
  * @return  Barometer pressure in pascal * 10
  */
-static inline uint16_t mavlink_msg_barometer_get_pressure_pascal(const mavlink_message_t* msg)
+static inline float mavlink_msg_barometer_get_pressure_pascal(const mavlink_message_t* msg)
 {
-    return _MAV_RETURN_uint16_t(msg,  0);
+    return _MAV_RETURN_float(msg,  0);
 }
 
 /**
@@ -281,9 +281,9 @@ static inline uint16_t mavlink_msg_barometer_get_pressure_pascal(const mavlink_m
  *
  * @return  Barometer temperature in c * 100
  */
-static inline int16_t mavlink_msg_barometer_get_temperature_c(const mavlink_message_t* msg)
+static inline float mavlink_msg_barometer_get_temperature_c(const mavlink_message_t* msg)
 {
-    return _MAV_RETURN_int16_t(msg,  2);
+    return _MAV_RETURN_float(msg,  4);
 }
 
 /**
@@ -291,9 +291,9 @@ static inline int16_t mavlink_msg_barometer_get_temperature_c(const mavlink_mess
  *
  * @return  Barometer altitude * 100
  */
-static inline int16_t mavlink_msg_barometer_get_altitude_m(const mavlink_message_t* msg)
+static inline float mavlink_msg_barometer_get_altitude_m(const mavlink_message_t* msg)
 {
-    return _MAV_RETURN_int16_t(msg,  4);
+    return _MAV_RETURN_float(msg,  8);
 }
 
 /**

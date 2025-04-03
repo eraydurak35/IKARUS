@@ -449,14 +449,14 @@
     </message>
 
     <message id="117" name="ATTITUDE">
-      <description>IMU Message</description>
+      <description>Attitude Message</description>
       <field type="float" name="pitch_degree">Pitch degree</field>
       <field type="float" name="roll_degree">Roll degree</field>
       <field type="float" name="heading_degree">Heading degree</field>
     </message>
 
     <message id="118" name="TARGET_ATTITUDE">
-      <description>IMU Message</description>
+      <description>Target Attitude Message</description>
       <field type="float" name="pitch_degree">Target pitch degree</field>
       <field type="float" name="roll_degree">Target roll degree</field>
       <field type="float" name="heading_degree">Target heading degree</field>
@@ -465,9 +465,8 @@
       <field type="float" name="yaw_dps">Target yaw dps</field>
     </message>
 
-
     <message id="119" name="GNSS">
-      <description>IMU Message</description>
+      <description>GNSS Message</description>
       <field type="uint8_t" name="fix">GNSS Fix type</field>
       <field type="uint8_t" name="sat_count">GNSS satellite count</field>
       <field type="int32_t" name="latitude">GNSS latitude degree * e-7</field>
@@ -482,10 +481,44 @@
     </message>
 
     <message id="120" name="BAROMETER">
-      <description>IMU Message</description>
-      <field type="uint16_t" name="pressure_pascal">Barometer pressure in pascal * 10</field>
-      <field type="int16_t" name="temperature_c">Barometer temperature in c * 100</field>
-      <field type="int16_t" name="altitude_m">Barometer altitude * 100</field>
+      <description>Barometer Message</description>
+      <field type="float" name="pressure_pascal">Barometer pressure in pascal</field>
+      <field type="float" name="temperature_c">Barometer temperature in c</field>
+      <field type="float" name="altitude_m">Barometer altitude</field>
+    </message>
+
+    <message id="121" name="TARGET_POS_VEL">
+      <description>Target Position and Velocity Message</description>
+      <field type="int32_t" name="latitude">Target latitude * e-7</field>
+      <field type="int32_t" name="longitude">Target longitude  * e-7</field>
+      <field type="float" name="altitude">Target altitude in meters</field>
+      <field type="float" name="vel_x_ms">Target x velocity in ms</field>
+      <field type="float" name="vel_y_ms">Target y velocity in ms</field>
+      <field type="float" name="vel_z_ms">Target z velocity in ms</field>
+      <field type="uint8_t" name="throttle">Throttle percent</field>
+    </message>
+
+    <message id="122" name="POS_VEL">
+      <description>Position and Velocity Message</description>
+      <field type="int32_t" name="latitude">Latitude * e-7</field>
+      <field type="int32_t" name="longitude">Longitude  * e-7</field>
+      <field type="float" name="altitude">Altitude in meters</field>
+      <field type="float" name="vel_x_ms">X velocity in ms</field>
+      <field type="float" name="vel_y_ms">Y velocity in ms</field>
+      <field type="float" name="vel_z_ms">Z velocity in ms</field>
+      <field type="float" name="vel_xy_ms">XY velocity in ms</field>
+    </message>
+
+    <message id="123" name="OPTICAL_FLOW">
+      <description>Optical Flow Sensor Message</description>
+      <field type="uint8_t" name="quality">flow quality percent</field>
+      <field type="float" name="vel_x_ms">X velocity in ms</field>
+      <field type="float" name="vel_y_ms">Y velocity in ms</field>
+    </message>
+
+    <message id="124" name="RANGE_FINDER">
+      <description>Range Finder Sensor Message</description>
+      <field type="int16_t" name="range_cm">Distance in cm</field>
     </message>
 
   </messages>

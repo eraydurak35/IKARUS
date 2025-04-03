@@ -4,12 +4,9 @@
 #include "../esp_now_comm.h"
 #include "typedefs.h"
 
-void stream_message_barometer(mavlink_message_t *_msg, uint8_t *_buffer, bmp390_t *_baro)
-{
-    mavlink_msg_barometer_pack(0, 0, _msg,
-    _baro->press,
-    _baro->temp,
-    _baro->altitude_m);
+void stream_message_range_finder(mavlink_message_t *_msg, uint8_t *_buffer, range_finder_t *_range)
+{   
+    mavlink_msg_range_finder_pack(0, 0, _msg, _range->range_cm);
 
     const uint16_t len = mavlink_msg_to_send_buffer(_buffer, _msg);
 
