@@ -6,8 +6,8 @@ static const char *TAG = "Defaults";
 
 void load_default_config(config_t *cfg)
 {
-    cfg->max_pitch_angle = DFLT_MAX_PITCH_ANGLE;
-    cfg->max_roll_angle = DFLT_MAX_ROLL_ANGLE;
+    cfg->max_pitch_angle = DFLT_MC_MAX_PITCH_DEG;
+    cfg->max_roll_angle = DFLT_MC_MAX_ROLL_DEG;
     cfg->max_pitch_rate = DFLT_MAX_PITCH_RATE;
     cfg->max_roll_rate = DFLT_MAX_ROLL_RATE;
     cfg->max_yaw_rate = DFLT_MAX_YAW_RATE;

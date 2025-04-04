@@ -92,7 +92,6 @@ static telemetry_small_integer_t telemetry;
 #else 
 static telemetry_t telemetry;
 static waypoint_t waypoint;
-static gamepad_t gamepad;
 #endif
 
 // Task 1'i tetikleyen interrupt fonksiyonu
@@ -188,7 +187,6 @@ void task_1(void *pvParameters)
                 counter = 0;
                 baro_get_altitude_velocity(&barometer);
             }
-            //printf("%.1f\n", imu.accel_ms2[Z]);
             #endif
             // IMU verilerini alçak geçiren filtreden geçir.
             apply_biquad_lpf_to_imu(&imu, lowpass);
@@ -202,7 +200,6 @@ void task_1(void *pvParameters)
             ahrs_predict();
             // ivme ve manyetik sensör ile duruşu güncelle
             ahrs_correct();
-            //printf("%.2f,%.2f,%.2f\n", imu.accel_ms2[X], imu.accel_ms2[Y], imu.accel_ms2[Z]);
             // ivme ölçümlerini body frame'den earth frame'e geçir
             earth_frame_acceleration();
             // earth frame'deki ivme bilgisini kullanarak yükseklik hesapla
@@ -212,7 +209,6 @@ void task_1(void *pvParameters)
             #if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
             optical_flow_velocity_XY();
             #endif
-            //printf("%.2f,%.2f,%.2f\n", states.acc_forward_ms2, states.acc_right_ms2, states.acc_up_ms2);
             #if SETUP_COMM_TYPE == USE_WEBCOMM && SETUP_CRAFT_TYPE == CRAFT_TYPE_QUADCOPTER
             small_drone_flight_control();
             #elif SETUP_COMM_TYPE == USE_RC_LINK && SETUP_CRAFT_TYPE == CRAFT_TYPE_QUADCOPTER

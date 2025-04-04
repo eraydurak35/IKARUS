@@ -27,4 +27,13 @@ idf_component_register(SRCS
 "ibus.c"
 "sbus.c"
 "hitl.c"
+"parameters/mc_controller_params.c"
+"parameters/general_params.c"
+"parameters/filter_params.c"
+"parameters/estimator_params.c"
 INCLUDE_DIRS ".")
+
+target_compile_options(${COMPONENT_LIB} PRIVATE 
+    -Wno-unused-variable
+    -Wno-unused-function
+)
