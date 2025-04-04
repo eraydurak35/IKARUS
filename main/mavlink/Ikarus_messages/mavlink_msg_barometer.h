@@ -5,9 +5,9 @@
 
 
 typedef struct __mavlink_barometer_t {
- float pressure_pascal; /*<  Barometer pressure in pascal * 10*/
- float temperature_c; /*<  Barometer temperature in c * 100*/
- float altitude_m; /*<  Barometer altitude * 100*/
+ float pressure_pascal; /*<  Barometer pressure in pascal*/
+ float temperature_c; /*<  Barometer temperature in c*/
+ float altitude_m; /*<  Barometer altitude*/
 } mavlink_barometer_t;
 
 #define MAVLINK_MSG_ID_BAROMETER_LEN 12
@@ -47,9 +47,9 @@ typedef struct __mavlink_barometer_t {
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param pressure_pascal  Barometer pressure in pascal * 10
- * @param temperature_c  Barometer temperature in c * 100
- * @param altitude_m  Barometer altitude * 100
+ * @param pressure_pascal  Barometer pressure in pascal
+ * @param temperature_c  Barometer temperature in c
+ * @param altitude_m  Barometer altitude
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_barometer_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -82,9 +82,9 @@ static inline uint16_t mavlink_msg_barometer_pack(uint8_t system_id, uint8_t com
  * @param status MAVLink status structure
  * @param msg The MAVLink message to compress the data into
  *
- * @param pressure_pascal  Barometer pressure in pascal * 10
- * @param temperature_c  Barometer temperature in c * 100
- * @param altitude_m  Barometer altitude * 100
+ * @param pressure_pascal  Barometer pressure in pascal
+ * @param temperature_c  Barometer temperature in c
+ * @param altitude_m  Barometer altitude
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_barometer_pack_status(uint8_t system_id, uint8_t component_id, mavlink_status_t *_status, mavlink_message_t* msg,
@@ -120,9 +120,9 @@ static inline uint16_t mavlink_msg_barometer_pack_status(uint8_t system_id, uint
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
- * @param pressure_pascal  Barometer pressure in pascal * 10
- * @param temperature_c  Barometer temperature in c * 100
- * @param altitude_m  Barometer altitude * 100
+ * @param pressure_pascal  Barometer pressure in pascal
+ * @param temperature_c  Barometer temperature in c
+ * @param altitude_m  Barometer altitude
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_barometer_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -194,9 +194,9 @@ static inline uint16_t mavlink_msg_barometer_encode_status(uint8_t system_id, ui
  * @brief Send a barometer message
  * @param chan MAVLink channel to send the message
  *
- * @param pressure_pascal  Barometer pressure in pascal * 10
- * @param temperature_c  Barometer temperature in c * 100
- * @param altitude_m  Barometer altitude * 100
+ * @param pressure_pascal  Barometer pressure in pascal
+ * @param temperature_c  Barometer temperature in c
+ * @param altitude_m  Barometer altitude
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -269,7 +269,7 @@ static inline void mavlink_msg_barometer_send_buf(mavlink_message_t *msgbuf, mav
 /**
  * @brief Get field pressure_pascal from barometer message
  *
- * @return  Barometer pressure in pascal * 10
+ * @return  Barometer pressure in pascal
  */
 static inline float mavlink_msg_barometer_get_pressure_pascal(const mavlink_message_t* msg)
 {
@@ -279,7 +279,7 @@ static inline float mavlink_msg_barometer_get_pressure_pascal(const mavlink_mess
 /**
  * @brief Get field temperature_c from barometer message
  *
- * @return  Barometer temperature in c * 100
+ * @return  Barometer temperature in c
  */
 static inline float mavlink_msg_barometer_get_temperature_c(const mavlink_message_t* msg)
 {
@@ -289,7 +289,7 @@ static inline float mavlink_msg_barometer_get_temperature_c(const mavlink_messag
 /**
  * @brief Get field altitude_m from barometer message
  *
- * @return  Barometer altitude * 100
+ * @return  Barometer altitude
  */
 static inline float mavlink_msg_barometer_get_altitude_m(const mavlink_message_t* msg)
 {

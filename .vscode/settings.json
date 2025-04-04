@@ -32,6 +32,8 @@
         "pmw3901.h": "c",
         "hmc5883l.h": "c",
         "blackbox.h": "c",
-        "mavlink.h": "c"
+        "mavlink.h": "c",
+        "freertos.h": "c",
+        "task.h": "c"
     }
 }

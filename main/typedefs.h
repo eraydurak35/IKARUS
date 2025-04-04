@@ -10,6 +10,13 @@
 #define RAD_TO_DEG 57.29577951f
 #define DEG_TO_RAD 0.01745329f
 
+
+typedef struct {
+    uint8_t core0_percent;
+    uint8_t core1_percent;
+} cpu_usage_t;
+
+
 typedef struct
 {
     uint8_t fix;

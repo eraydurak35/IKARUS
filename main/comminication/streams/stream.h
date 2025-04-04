@@ -10,6 +10,8 @@
 #include "pos_vel.h"
 #include "optical_flow.h"
 #include "range_finder.h"
+#include "cpu_usage.h"
+#include "rc_channels.h"
 
 typedef enum
 {
@@ -23,6 +25,8 @@ typedef enum
     POS_VEL_MSG_OFFSET = 14,
     OPTICAL_FLOW_MSG_OFFSET = 16,
     RANGE_FINDER_MSG_OFFSET = 18,
+    CPU_USAGE_MSG_OFFSET = 20,
+    RC_CHANNELS_MSG_OFFSET = 22
 
 }message_offsets_t;
 
@@ -38,6 +42,8 @@ typedef enum
     POS_VEL_MSG_FREQ = 2,
     OPTICAL_FLOW_MSG_FREQ = 2,
     RANGE_FINDER_MSG_FREQ = 2,
+    CPU_USAGE_MSG_FREQ = 1,
+    RC_CHANNELS_MSG_FREQ = 1
 
 }message_intervals_t;
 
@@ -54,16 +60,16 @@ static target_t *target_ptr = NULL;
 static gnss_t *gnss_ptr = NULL;
 static pmw3901_t *flow_ptr = NULL;
 static range_finder_t *range_ptr = NULL;
-static gamepad_t *gamepad_ptr = NULL;
+static cpu_usage_t *cpu_ptr = NULL;
+static radio_control_t *radio_ptr = NULL;
 
 static uint8_t mavlink_buffer[MAVLINK_MAX_PACKET_LEN] = {0};
 static mavlink_message_t mavlink_msg;
 
-void start_mavlink_stream(config_t *cfg, waypoint_t *wp, flight_t *flt, states_t *stt, imu_t *imu, magnetometer_t *mag, bmp390_t *baro, gnss_t *gnss, pmw3901_t *flow, range_finder_t *range, target_t *target, gamepad_t *gmpd)
+void start_mavlink_stream(config_t *cfg, waypoint_t *wp, flight_t *flt, states_t *stt, imu_t *imu, magnetometer_t *mag, bmp390_t *baro, gnss_t *gnss, pmw3901_t *flow, range_finder_t *range, target_t *target, cpu_usage_t *cpu, radio_control_t *radio)
 {
     config_ptr = cfg;
     waypoint_ptr = wp;
-    gamepad_ptr = gmpd;
     flight_ptr = flt;
     state_ptr = stt;
     imu_ptr = imu;
@@ -73,6 +79,8 @@ void start_mavlink_stream(config_t *cfg, waypoint_t *wp, flight_t *flt, states_t
     gnss_ptr = gnss;
     flow_ptr = flow;
     range_ptr = range;
+    cpu_ptr = cpu;
+    radio_ptr = radio;
 }
 
 
@@ -112,5 +120,11 @@ void run_mavlink_stream()
     }
     if ((counter - RANGE_FINDER_MSG_OFFSET) % (LOOP_FREQ / RANGE_FINDER_MSG_FREQ) == 0) {
         stream_message_range_finder(&mavlink_msg, mavlink_buffer, range_ptr);
+    }
+    if ((counter - CPU_USAGE_MSG_OFFSET) % (LOOP_FREQ / CPU_USAGE_MSG_FREQ) == 0) {
+        stream_message_cpu_usage(&mavlink_msg, mavlink_buffer, cpu_ptr);
+    }
+    if ((counter - RC_CHANNELS_MSG_OFFSET) % (LOOP_FREQ / RC_CHANNELS_MSG_FREQ) == 0) {
+        stream_message_rc_channels(&mavlink_msg, mavlink_buffer, radio_ptr);
     }
 }

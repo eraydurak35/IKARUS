@@ -25,12 +25,13 @@
 // ||############################||
 // ||      CUSTOM LIBRARIES      ||
 // ||############################||
+#include "mavlink/Ikarus_messages/mavlink.h"
+#include "comminication/streams/stream.h"
 #include "control/small_drone_control.h"
 #include "control/quadcopter_control.h"
 #include "comminication/esp_now_comm.h"
 #include "comminication/web_comm.h"
 #include "command_line_interface.h"
-#include "mavlink/Ikarus_messages/mavlink.h"
 #include "storage/nv_storage.h"
 #include "sensors/icm42688p.h"
 #include "sensors/qmc5883l.h"
@@ -50,7 +51,6 @@
 #include "sbus.h"
 #include "gpio.h"
 #include "hitl.h"
-#include "comminication/streams/stream.h"
 
 static esp_timer_handle_t timer1;
 static TaskHandle_t task1_handler;
@@ -85,6 +85,7 @@ static states_t states;
 static biquad_lpf_t lowpass[6];
 static biquad_notch_filter_t notch[6];
 static radio_control_t radio = {{1500, 1500, 1000, 1500, 1000, 1000, 1000, 1000, 1500, 1000, 1000, 1000, 1000, 1000}};
+static cpu_usage_t cpu_usage;
 
 #if SETUP_COMM_TYPE == USE_WEBCOMM
 static telemetry_small_integer_t telemetry;
@@ -120,6 +121,8 @@ void task_7(void *pvParameters);
 #if SETUP_OPT_FLOW_TYPE == OPT_FLOW_PMW3901
 void task_8(void *pvParameters);
 #endif
+
+void parse_cpu_usage(char* statsBuffer, cpu_usage_t* cpuUsage);
 
 // Ana görev
 void task_1(void *pvParameters)
@@ -457,11 +460,23 @@ void task_5(void *pvParameters)
 #if SETUP_COMM_TYPE == USE_RC_LINK
 void task_6(void *pvParameters)
 {
+    char cpu_stats_buffer[512] = {0};
+    uint8_t counter = 0;
     esp_now_comm_init();
-    start_mavlink_stream(&config, &waypoint, &flight, &states, &imu, &mag, &barometer, &gnss, &flow, &range, &target, &gamepad);
+    start_mavlink_stream(&config, &waypoint, &flight, &states, &imu, &mag, &barometer, &gnss, &flow, &range, &target, &cpu_usage, &radio);
     while (1)
     {
+        counter++;
         run_mavlink_stream();
+
+        if (counter > 100)
+        {
+            counter = 0;
+            vTaskGetRunTimeStats(cpu_stats_buffer);
+            //printf("%s\n", cpu_stats_buffer);
+            parse_cpu_usage(cpu_stats_buffer, &cpu_usage);
+            //printf("Core0: %d\nCore1: %d\n\n", cpu_usage.core0_percent, cpu_usage.core1_percent);
+        }
         vTaskDelay(10);
     }
 }
@@ -563,4 +578,36 @@ void app_main(void)
     xTaskCreatePinnedToCore(&task_2, "task2", 1024 * 4, NULL, 1, &task2_handler, tskNO_AFFINITY);
     #endif
     
+}
+
+
+void parse_cpu_usage(char* buffer, cpu_usage_t* cpuUsage) 
+{
+    uint8_t idle_values[2] = {0};
+    int idleCount = 0;
+    char* line = strtok(buffer, "\n");
+
+    while (line != NULL && idleCount < 2) {
+        if (strstr(line, "IDLE") != NULL) {
+            char cpuStr[16];
+            if (sscanf(line, "%*s %*u %s", cpuStr) == 1) {
+                // "%" işaretini kaldır ve tam sayıya çevir
+                char* percentChar = strchr(cpuStr, '%');
+                if (percentChar) *percentChar = '\0'; // Stringi sonlandır
+                
+                idle_values[idleCount] = 100 - (uint8_t)atoi(cpuStr);
+                idleCount++;
+            }
+        }
+        line = strtok(NULL, "\n");
+    }
+
+    // Büyük olanı core0_percent'e ata
+    if (idle_values[0] >= idle_values[1]) {
+        cpuUsage->core0_percent = idle_values[0];
+        cpuUsage->core1_percent = idle_values[1];
+    } else {
+        cpuUsage->core0_percent = idle_values[1];
+        cpuUsage->core1_percent = idle_values[0];
+    }
 }
