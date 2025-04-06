@@ -31,6 +31,11 @@ typedef struct {
         int32_t i;
         float f;
         uint8_t b;
+    } default_value;
+    union {
+        int32_t i;
+        float f;
+        uint8_t b;
     } value;
 } param_t;
 
@@ -38,9 +43,9 @@ typedef struct
 {
     union
     {
-        int32_t _int;
-        float _float;
-        uint8_t _bool;
+        int32_t i;
+        float f;
+        uint8_t b;
     } value;
 } param_ret_t;
 
@@ -52,6 +57,7 @@ typedef struct
         .type = PARAM_TYPE_FLOAT, \
         .min_value.f = _min, \
         .max_value.f = _max, \
+        .default_value.f = _default, \
         .value.f = _default \
     };
 
@@ -61,6 +67,7 @@ typedef struct
         .type = PARAM_TYPE_INT32, \
         .min_value.i = _min, \
         .max_value.i = _max, \
+        .default_value.i = _default, \
         .value.i = _default \
 };
 
@@ -68,14 +75,76 @@ typedef struct
     param_t PARAM_##_name = { \
         .name = #_name, \
         .type = PARAM_TYPE_BOOL, \
+        .default_value.b = _default, \
         .value.b = _default \
 };
 #define PARAM_EXTERN(_name) \
-    extern param_t PARAM_##_name; \
+    extern param_t PARAM_##_name;
 
 
 
-PARAM_EXTERN(MY_PARAM)
+
+/***** PARAM_START *****/
+PARAM_EXTERN(AHRS_BETA);
+PARAM_EXTERN(AHRS_ZETA);
+PARAM_EXTERN(EST_Z_POS_BETA);
+PARAM_EXTERN(EST_MAG_DECLIN);
+PARAM_EXTERN(EST_Z_VEL_BETA);
+PARAM_EXTERN(EST_Z_VEL_ZETA);
+PARAM_EXTERN(EST_XY_BETA);
+PARAM_EXTERN(NOTCH1_FREQ);
+PARAM_EXTERN(NOTCH2_FREQ);
+PARAM_EXTERN(NOTCH1_BW);
+PARAM_EXTERN(NOTCH2_BW);
+PARAM_EXTERN(LPF_CUTOFF);
+PARAM_EXTERN(VOLT_GAIN);
+PARAM_EXTERN(MC_PITCH_ATT_P);
+PARAM_EXTERN(MC_ROLL_ATT_P);
+PARAM_EXTERN(MC_YAW_ATT_P);
+PARAM_EXTERN(MC_PITCH_RATE_P);
+PARAM_EXTERN(MC_ROLL_RATE_P);
+PARAM_EXTERN(MC_YAW_RATE_P);
+PARAM_EXTERN(MC_PITCH_RATE_I);
+PARAM_EXTERN(MC_ROLL_RATE_I);
+PARAM_EXTERN(MC_YAW_RATE_I);
+PARAM_EXTERN(MC_PITCH_RATE_D);
+PARAM_EXTERN(MC_ROLL_RATE_D);
+PARAM_EXTERN(MC_XY_POS_P);
+PARAM_EXTERN(MC_Z_POS_P);
+PARAM_EXTERN(MC_XY_VEL_P);
+PARAM_EXTERN(MC_XY_VEL_I);
+PARAM_EXTERN(MC_Z_VEL_P);
+PARAM_EXTERN(MC_Z_VEL_I);
+PARAM_EXTERN(MC_Z_VEL_D);
+PARAM_EXTERN(MC_MAX_PITCH_DEG);
+PARAM_EXTERN(MC_MAX_ROLL_DEG);
+PARAM_EXTERN(MC_MAX_PITCH_RTE);
+PARAM_EXTERN(MC_MAX_ROLL_RTE);
+PARAM_EXTERN(MC_MAX_YAW_RTE);
+PARAM_EXTERN(MC_MAX_XY_VEL);
+PARAM_EXTERN(MC_MAX_Z_VEL);
+PARAM_EXTERN(MC_WP_THRESHOLD);
+PARAM_EXTERN(MC_HOVER_THR);
+PARAM_EXTERN(MC_TKOF_ALT);
+/***** PARAM_END *****/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* 
