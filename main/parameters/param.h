@@ -45,6 +45,39 @@ typedef struct
 } param_ret_t;
 
 
+
+#define PARAM_DEFINE_FLOAT(_name, _default, _min, _max) \
+    param_t PARAM_##_name = { \
+        .name = #_name, \
+        .type = PARAM_TYPE_FLOAT, \
+        .min_value.f = _min, \
+        .max_value.f = _max, \
+        .value.f = _default \
+    };
+
+#define PARAM_DEFINE_INT32(_name, _default, _min, _max) \
+    param_t PARAM_##_name = { \
+        .name = #_name, \
+        .type = PARAM_TYPE_INT32, \
+        .min_value.i = _min, \
+        .max_value.i = _max, \
+        .value.i = _default \
+};
+
+#define PARAM_DEFINE_BOOL(_name, _default) \
+    param_t PARAM_##_name = { \
+        .name = #_name, \
+        .type = PARAM_TYPE_BOOL, \
+        .value.b = _default \
+};
+#define PARAM_EXTERN(_name) \
+    extern param_t PARAM_##_name; \
+
+
+
+PARAM_EXTERN(MY_PARAM)
+
+
 /* 
 // Helper macro to get parameter metadata
 #define PARAM_META(_name) _name##

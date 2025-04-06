@@ -52,6 +52,8 @@
 #include "gpio.h"
 #include "hitl.h"
 
+#include "parameters/param.h"
+
 static esp_timer_handle_t timer1;
 static TaskHandle_t task1_handler;
 static TaskHandle_t task2_handler;
