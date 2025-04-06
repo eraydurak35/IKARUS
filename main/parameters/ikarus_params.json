@@ -1,353 +1,371 @@
 [
     {
+        "category": "estimator_params",
         "description": "",
-        "variable_name": "param_est_z_pos_beta",
+        "name": "AHRS_BETA",
+        "type": "float",
+        "default_value": 0.01,
+        "min_value": 0.0,
+        "max_value": 2.0
+    },
+    {
+        "category": "estimator_params",
+        "description": "",
+        "name": "AHRS_ZETA",
+        "type": "float",
+        "default_value": 0.001,
+        "min_value": 0.0,
+        "max_value": 1.0
+    },
+    {
+        "category": "estimator_params",
+        "description": "",
         "name": "EST_Z_POS_BETA",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 0.1,
         "min_value": 0.0,
-        "max_value": 1.0,
-        "value": 0.1
+        "max_value": 1.0
     },
     {
+        "category": "estimator_params",
         "description": "",
-        "variable_name": "param_est_mag_declin",
         "name": "EST_MAG_DECLIN",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 0.0,
         "min_value": -20.0,
-        "max_value": 20.0,
-        "value": 0.0
+        "max_value": 20.0
     },
     {
+        "category": "estimator_params",
         "description": "",
-        "variable_name": "param_est_z_vel_beta",
         "name": "EST_Z_VEL_BETA",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 0.001,
         "min_value": 0.0,
-        "max_value": 1.0,
-        "value": 0.001
+        "max_value": 1.0
     },
     {
+        "category": "estimator_params",
         "description": "",
-        "variable_name": "param_est_z_vel_zeta",
         "name": "EST_Z_VEL_ZETA",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 0.0001,
         "min_value": 0.0,
-        "max_value": 1.0,
-        "value": 0.0001
+        "max_value": 1.0
     },
     {
+        "category": "estimator_params",
         "description": "",
-        "variable_name": "param_est_xy_beta",
         "name": "EST_XY_BETA",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 0.0001,
         "min_value": 0.0,
-        "max_value": 1.0,
-        "value": 0.0001
+        "max_value": 1.0
     },
     {
+        "category": "filter_params",
         "description": "",
-        "variable_name": "param_notch1_freq",
         "name": "NOTCH1_FREQ",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 100.0,
         "min_value": 40.0,
-        "max_value": 400.0,
-        "value": 100.0
+        "max_value": 400.0
     },
     {
+        "category": "filter_params",
         "description": "",
-        "variable_name": "param_notch2_freq",
         "name": "NOTCH2_FREQ",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 120.0,
         "min_value": 40.0,
-        "max_value": 400.0,
-        "value": 120.0
+        "max_value": 400.0
     },
     {
+        "category": "filter_params",
         "description": "",
-        "variable_name": "param_notch1_bw",
         "name": "NOTCH1_BW",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 40.0,
         "min_value": 20.0,
-        "max_value": 120.0,
-        "value": 40.0
+        "max_value": 120.0
     },
     {
+        "category": "filter_params",
         "description": "",
-        "variable_name": "param_notch2_bw",
         "name": "NOTCH2_BW",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 40.0,
         "min_value": 20.0,
-        "max_value": 120.0,
-        "value": 40.0
+        "max_value": 120.0
     },
     {
+        "category": "filter_params",
         "description": "",
-        "variable_name": "param_lpf_cutoff",
         "name": "LPF_CUTOFF",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 200.0,
         "min_value": 40.0,
-        "max_value": 400.0,
-        "value": 200.0
+        "max_value": 400.0
     },
     {
+        "category": "general_params",
         "description": "",
-        "variable_name": "param_volt_gain",
         "name": "VOLT_GAIN",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 1.0,
         "min_value": 0.5,
-        "max_value": 10.0,
-        "value": 1.0
+        "max_value": 10.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_pitch_att_p",
+        "category": "mc_controller_params",
+        "description": "Parameter description",
         "name": "MC_PITCH_ATT_P",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 5.0,
         "min_value": 0.5,
-        "max_value": 10.0,
-        "value": 5.0
+        "max_value": 10.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_roll_att_p",
+        "category": "mc_controller_params",
+        "description": "Parameter description",
         "name": "MC_ROLL_ATT_P",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 5.0,
         "min_value": 0.5,
-        "max_value": 10.0,
-        "value": 5.0
+        "max_value": 10.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_yaw_att_p",
+        "category": "mc_controller_params",
+        "description": "Parameter description",
         "name": "MC_YAW_ATT_P",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 1.0,
         "min_value": 0.5,
-        "max_value": 10.0,
-        "value": 1.0
+        "max_value": 10.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_pitch_rate_p",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_PITCH_RATE_P",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 3.0,
         "min_value": 1.0,
-        "max_value": 10.0,
-        "value": 3.0
+        "max_value": 10.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_roll_rate_p",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_ROLL_RATE_P",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 3.0,
         "min_value": 1.0,
-        "max_value": 10.0,
-        "value": 3.0
+        "max_value": 10.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_yaw_rate_p",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_YAW_RATE_P",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 10.0,
         "min_value": 1.0,
-        "max_value": 20.0,
-        "value": 10.0
+        "max_value": 20.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_pitch_rate_i",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_PITCH_RATE_I",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 1.0,
         "min_value": 0.1,
-        "max_value": 5.0,
-        "value": 1.0
+        "max_value": 5.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_roll_rate_i",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_ROLL_RATE_I",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 1.0,
         "min_value": 0.1,
-        "max_value": 5.0,
-        "value": 1.0
+        "max_value": 5.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_yaw_rate_i",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_YAW_RATE_I",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 2.0,
         "min_value": 0.1,
-        "max_value": 5.6,
-        "value": 2.0
+        "max_value": 5.6
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_pitch_rate_d",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_PITCH_RATE_D",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 20.0,
         "min_value": 2.0,
-        "max_value": 50.0,
-        "value": 20.0
+        "max_value": 50.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_roll_rate_d",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_ROLL_RATE_D",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 20.0,
         "min_value": 2.0,
-        "max_value": 50.0,
-        "value": 20.0
+        "max_value": 50.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_xy_pos_p",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_XY_POS_P",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 1.0,
         "min_value": 0.0,
-        "max_value": 5.0,
-        "value": 1.0
+        "max_value": 5.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_z_pos_p",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_Z_POS_P",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 0.4,
         "min_value": 0.0,
-        "max_value": 5.0,
-        "value": 0.4
+        "max_value": 5.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_xy_vel_p",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_XY_VEL_P",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 12.0,
         "min_value": 2.0,
-        "max_value": 20.0,
-        "value": 12.0
+        "max_value": 20.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_xy_vel_i",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_XY_VEL_I",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 15.0,
         "min_value": 2.0,
-        "max_value": 20.0,
-        "value": 15.0
+        "max_value": 20.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_z_vel_p",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_Z_VEL_P",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 180.0,
         "min_value": 2.0,
-        "max_value": 250.0,
-        "value": 180.0
+        "max_value": 250.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_z_vel_i",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_Z_VEL_I",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 50.0,
         "min_value": 2.0,
-        "max_value": 100.0,
-        "value": 50.0
+        "max_value": 100.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_z_vel_d",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_Z_VEL_D",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 0.0,
         "min_value": 0.0,
-        "max_value": 10.0,
-        "value": 0.0
+        "max_value": 10.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_max_pitch_deg",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_MAX_PITCH_DEG",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 20.0,
         "min_value": 0.0,
-        "max_value": 50.0,
-        "value": 20.0
+        "max_value": 50.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_max_roll_deg",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_MAX_ROLL_DEG",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 20.0,
         "min_value": 0.0,
-        "max_value": 50.0,
-        "value": 20.0
+        "max_value": 50.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_max_pitch_rte",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_MAX_PITCH_RTE",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 150.0,
         "min_value": 0.0,
-        "max_value": 200.0,
-        "value": 150.0
+        "max_value": 200.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_max_roll_rte",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_MAX_ROLL_RTE",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 150.0,
         "min_value": 0.0,
-        "max_value": 200.0,
-        "value": 150.0
+        "max_value": 200.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_max_yaw_rte",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_MAX_YAW_RTE",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 150.0,
         "min_value": 0.0,
-        "max_value": 200.0,
-        "value": 150.0
+        "max_value": 200.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_max_xy_vel",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_MAX_XY_VEL",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 1.0,
         "min_value": 0.0,
-        "max_value": 10.0,
-        "value": 1.0
+        "max_value": 10.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_max_z_vel",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_MAX_Z_VEL",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 1.0,
         "min_value": 0.0,
-        "max_value": 5.0,
-        "value": 1.0
+        "max_value": 5.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_wp_threshold",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_WP_THRESHOLD",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 5.0,
         "min_value": 0.0,
-        "max_value": 100.0,
-        "value": 5.0
+        "max_value": 100.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_hover_thr",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_HOVER_THR",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 300.0,
         "min_value": 100.0,
-        "max_value": 800.0,
-        "value": 300.0
+        "max_value": 800.0
     },
     {
-        "description": "This is the description of the parameter",
-        "variable_name": "param_mc_tkof_alt",
+        "category": "mc_controller_params",
+        "description": "",
         "name": "MC_TKOF_ALT",
-        "type": "PARAM_TYPE_FLOAT",
+        "type": "float",
+        "default_value": 1.5,
         "min_value": 1.0,
-        "max_value": 50.0,
-        "value": 1.5
+        "max_value": 50.0
     }
 ]

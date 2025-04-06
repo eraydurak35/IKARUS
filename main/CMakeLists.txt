@@ -31,6 +31,7 @@ idf_component_register(SRCS
 "parameters/general_params.c"
 "parameters/filter_params.c"
 "parameters/estimator_params.c"
+"parameters/param.c"
 INCLUDE_DIRS ".")
 
 target_compile_options(${COMPONENT_LIB} PRIVATE 

@@ -75,7 +75,7 @@ for filename in os.listdir(parameters_dir):
                     parameters.append(param)
 
 # Output JSON file path
-output_json_path = os.path.join(parameters_dir, "parameters.json")
+output_json_path = os.path.join(parameters_dir, "ikarus_params.json")
 
 # Write the parameters to a JSON file
 with open(output_json_path, "w") as json_file:
