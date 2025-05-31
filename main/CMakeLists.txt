@@ -32,6 +32,32 @@ idf_component_register(SRCS
 "parameters/filter_params.c"
 "parameters/estimator_params.c"
 "parameters/param.c"
+
+"../components/ecl/airdata/WindEstimator.cpp"
+"../components/ecl/EKF/airspeed_fusion.cpp"
+"../components/ecl/EKF/control.cpp"
+"../components/ecl/EKF/covariance.cpp"
+"../components/ecl/EKF/drag_fusion.cpp"
+"../components/ecl/EKF/ekf_helper.cpp"
+"../components/ecl/EKF/ekf.cpp"
+"../components/ecl/EKF/EKFGSF_yaw.cpp"
+"../components/ecl/EKF/estimator_interface.cpp"
+"../components/ecl/EKF/gps_checks.cpp"
+"../components/ecl/EKF/gps_yaw_fusion.cpp"
+"../components/ecl/EKF/imu_down_sampler.cpp"
+"../components/ecl/EKF/mag_control.cpp"
+"../components/ecl/EKF/mag_fusion.cpp"
+"../components/ecl/EKF/optflow_fusion.cpp"
+"../components/ecl/EKF/sensor_range_finder.cpp"
+"../components/ecl/EKF/sideslip_fusion.cpp"
+"../components/ecl/EKF/terrain_estimator.cpp"
+"../components/ecl/EKF/utils.cpp"
+"../components/ecl/EKF/vel_pos_fusion.cpp"
+"../components/ecl/geo/geo.cpp"
+"../components/ecl/geo_lookup/geo_mag_declination.cpp"
+"../components/ecl/ecl_c_wrapper.cpp"
+
+
 INCLUDE_DIRS ".")
 
 target_compile_options(${COMPONENT_LIB} PRIVATE 
