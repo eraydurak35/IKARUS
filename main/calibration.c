@@ -147,9 +147,9 @@ uint8_t magnetometer_calibration(magnetometer_t *mag)
     if (!init)
     {
         // İşlem başlamadan önce medyan filtrenin bufferını doldur
-        mag->axis[X] = median_filter(&filter_x, mag->axis[X]);
-        mag->axis[Y] = median_filter(&filter_y, mag->axis[Y]);
-        mag->axis[Z] = median_filter(&filter_z, mag->axis[Z]);
+        mag->gauss[X] = median_filter(&filter_x, mag->gauss[X]);
+        mag->gauss[Y] = median_filter(&filter_y, mag->gauss[Y]);
+        mag->gauss[Z] = median_filter(&filter_z, mag->gauss[Z]);
 
         // LED yakıp söndür (50ms x 10 = 500ms)
         if (counter < 10) status_led_set_brightness(100);
@@ -160,12 +160,12 @@ uint8_t magnetometer_calibration(magnetometer_t *mag)
             status_led_set_brightness(0);
             counter = 0;
             init = 1;
-            x_biggest_value = mag->axis[X];
-            x_smallest_value = mag->axis[X];
-            y_biggest_value = mag->axis[Y];
-            y_smallest_value = mag->axis[Y];
-            z_biggest_value = mag->axis[Z];
-            z_smallest_value = mag->axis[Z];
+            x_biggest_value = mag->gauss[X];
+            x_smallest_value = mag->gauss[X];
+            y_biggest_value = mag->gauss[Y];
+            y_smallest_value = mag->gauss[Y];
+            z_biggest_value = mag->gauss[Z];
+            z_smallest_value = mag->gauss[Z];
             return 0;
         }
         // LED yanıp sönme süresini tutan sayaç
@@ -176,17 +176,17 @@ uint8_t magnetometer_calibration(magnetometer_t *mag)
     else
     {
         // Yeni gelen ölçümleri medyan filtreden geçir
-        mag->axis[X] = median_filter(&filter_x, mag->axis[X]);
-        mag->axis[Y] = median_filter(&filter_y, mag->axis[Y]);
-        mag->axis[Z] = median_filter(&filter_z, mag->axis[Z]);
+        mag->gauss[X] = median_filter(&filter_x, mag->gauss[X]);
+        mag->gauss[Y] = median_filter(&filter_y, mag->gauss[Y]);
+        mag->gauss[Z] = median_filter(&filter_z, mag->gauss[Z]);
 
         // O ana kadar ölçülen en büyük ve en küçük değeri bul
-        if (mag->axis[X] > x_biggest_value) x_biggest_value = mag->axis[X];
-        else if (mag->axis[X] < x_smallest_value) x_smallest_value = mag->axis[X];
-        if (mag->axis[Y] > y_biggest_value) y_biggest_value = mag->axis[Y];
-        else if (mag->axis[Y] < y_smallest_value) y_smallest_value = mag->axis[Y];
-        if (mag->axis[Z] > z_biggest_value) z_biggest_value = mag->axis[Z];
-        else if (mag->axis[Z] < z_smallest_value) z_smallest_value = mag->axis[Z];
+        if (mag->gauss[X] > x_biggest_value) x_biggest_value = mag->gauss[X];
+        else if (mag->gauss[X] < x_smallest_value) x_smallest_value = mag->gauss[X];
+        if (mag->gauss[Y] > y_biggest_value) y_biggest_value = mag->gauss[Y];
+        else if (mag->gauss[Y] < y_smallest_value) y_smallest_value = mag->gauss[Y];
+        if (mag->gauss[Z] > z_biggest_value) z_biggest_value = mag->gauss[Z];
+        else if (mag->gauss[Z] < z_smallest_value) z_smallest_value = mag->gauss[Z];
 
         // Kalibrasyon süresini tutan sayaç
         counter++;

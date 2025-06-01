@@ -48,7 +48,7 @@
 #define LIDAR_TF_LUNA              2
 
 // Haberleşme türü seçenekleri
-#define USE_WEBCOMM                1
+#define USE_WEBCOMM                1 /* NOT READY */
 #define USE_RC_LINK                2
 
 // Motor sinyali seçenekleri
@@ -63,7 +63,7 @@
 //--------------------------------------------------------------//
 #define SETUP_ENABLE_HITL         (false)                        // 
 #define SETUP_USE_BLACKBOX        (false)                       // "true" --> "ARM" kayıt başlar, "DISARM" kayıt durur. "false" --> devre dışı bırakır.
-#define SETUP_MAGNETO_TYPE        (MAG_NONE)                    // Manyetik sensör seçimi.
+#define SETUP_MAGNETO_TYPE        (MAG_QMC5883L)                // Manyetik sensör seçimi.
 #define SETUP_CRAFT_TYPE          (CRAFT_TYPE_QUADCOPTER)       // Araç tipi seçimi
 #define SETUP_COMM_TYPE           (USE_RC_LINK)                 // Kontrol methodu seçimi
 #define SETUP_RC_PROTOCOL         (SERIAL_SBUS)
@@ -111,12 +111,12 @@
 //----------------------------------------------------------//
 
 //---- MANYETIK SENSOR EKSEN HIZALANMASI ----//
-#define ALIGNED_MAG_X_AXIS        (Y)        // Varsayılan "X"
-#define ALIGNED_MAG_Y_AXIS        (X)        // Varsayılan "Y"
+#define ALIGNED_MAG_X_AXIS        (X)        // Varsayılan "X"
+#define ALIGNED_MAG_Y_AXIS        (Y)        // Varsayılan "Y"
 #define ALIGNED_MAG_Z_AXIS        (Z)        // Varsayılan "Z"
 
-#define ALIGNED_MAG_X_AXIS_SIGN   (POSITIVE) // Varsayılan "POSITIVE"
-#define ALIGNED_MAG_Y_AXIS_SIGN   (NEGATIVE) // Varsayılan "NEGATIVE"
+#define ALIGNED_MAG_X_AXIS_SIGN   (NEGATIVE) // Varsayılan "POSITIVE"
+#define ALIGNED_MAG_Y_AXIS_SIGN   (POSITIVE) // Varsayılan "NEGATIVE"
 #define ALIGNED_MAG_Z_AXIS_SIGN   (NEGATIVE) // Varsayılan "POSITIVE"
 
 //----- IVME SENSORU EKSEN HIZALANMASI -----//
@@ -138,7 +138,7 @@
 #define ALIGNED_GYR_Z_AXIS_SIGN   (NEGATIVE) // Varsayılan "NEGATIVE"
 
 
-#define SETUP_MAIN_LOOP_FREQ_HZ   (1000.0f)
+#define SETUP_MAIN_LOOP_FREQ_HZ   (500.0f)
 
 
 //----------------------------------------------------------//

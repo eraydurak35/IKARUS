@@ -74,19 +74,19 @@ static void parse_qmc5883l_data(magnetometer_t *mag, uint8_t *buffer)
     axis[Y] = (int16_t)(buffer[2] | buffer[3] << 8);
     axis[Z] = (int16_t)(buffer[4] | buffer[5] << 8);
 
-    mag->axis[X] = axis[ALIGNED_MAG_X_AXIS] * ALIGNED_MAG_X_AXIS_SIGN;
-    mag->axis[Y] = axis[ALIGNED_MAG_Y_AXIS] * ALIGNED_MAG_Y_AXIS_SIGN;
-    mag->axis[Z] = axis[ALIGNED_MAG_Z_AXIS] * ALIGNED_MAG_Z_AXIS_SIGN;
+    mag->gauss[X] = (axis[ALIGNED_MAG_X_AXIS] * ALIGNED_MAG_X_AXIS_SIGN) / 3000.0f;
+    mag->gauss[Y] = (axis[ALIGNED_MAG_Y_AXIS] * ALIGNED_MAG_Y_AXIS_SIGN) / 3000.0f;
+    mag->gauss[Z] = (axis[ALIGNED_MAG_Z_AXIS] * ALIGNED_MAG_Z_AXIS_SIGN) / 3000.0f;
 }
 
 static void get_calibrated_result(magnetometer_t *mag)
 {
-    mag->axis[X] -= mag_calib_data->offset[X];
-    mag->axis[Y] -= mag_calib_data->offset[Y];
-    mag->axis[Z] -= mag_calib_data->offset[Z];
+    mag->gauss[X] -= mag_calib_data->offset[X];
+    mag->gauss[Y] -= mag_calib_data->offset[Y];
+    mag->gauss[Z] -= mag_calib_data->offset[Z];
 
-    mag->axis[X] *= mag_calib_data->scale[X];
-    mag->axis[Y] *= mag_calib_data->scale[Y];
-    mag->axis[Z] *= mag_calib_data->scale[Z];
+    mag->gauss[X] *= mag_calib_data->scale[X];
+    mag->gauss[Y] *= mag_calib_data->scale[Y];
+    mag->gauss[Z] *= mag_calib_data->scale[Z];
 }
 

@@ -58,7 +58,7 @@ typedef struct
 
 typedef struct
 {
-    float axis[3];
+    float gauss[3];
 } magnetometer_t;
 
 typedef struct

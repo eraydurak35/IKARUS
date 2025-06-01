@@ -35,6 +35,7 @@
         "mavlink.h": "c",
         "freertos.h": "c",
         "task.h": "c",
-        "nv_storage.h": "c"
+        "nv_storage.h": "c",
+        "cstdint": "cpp"
     }
 }

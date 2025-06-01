@@ -27,7 +27,6 @@
 // ||############################||
 #include "mavlink/Ikarus_messages/mavlink.h"
 #include "comminication/streams/stream.h"
-#include "control/small_drone_control.h"
 #include "control/quadcopter_control.h"
 #include "comminication/esp_now_comm.h"
 #include "comminication/web_comm.h"
@@ -37,7 +36,6 @@
 #include "sensors/qmc5883l.h"
 #include "sensors/hmc5883l.h"
 #include "storage/blackbox.h"
-#include "state_estimator.h"
 #include "sensors/tf_luna.h"
 #include "sensors/pmw3901.h"
 #include "sensors/bmp390.h"
@@ -51,7 +49,7 @@
 #include "sbus.h"
 #include "gpio.h"
 #include "hitl.h"
-
+#include "../components/ecl/ecl_c_wrapper.h"
 #include "parameters/param.h"
 
 static esp_timer_handle_t timer1;
@@ -130,7 +128,6 @@ void task_1(void *pvParameters)
 {
     #if SETUP_COMM_TYPE == USE_WEBCOMM
     web_comm_init(&radio, &states, &flight, &telemetry);
-    small_drone_control_init(&radio, &telemetry, &flight, &target, &states, &config);
     #elif SETUP_COMM_TYPE == USE_RC_LINK
     quadcopter_control_init(&radio, &telemetry, &flight, &target, &states, &config, &waypoint, &gnss);
     xTaskCreatePinnedToCore(&task_6, "task6", 1024 * 4, NULL, 0, &task6_handler, tskNO_AFFINITY);
@@ -153,6 +150,7 @@ void task_1(void *pvParameters)
         biquad_notch_filter_array_init(6, notch, config.notch_1_freq, config.notch_1_bndwdth, SETUP_MAIN_LOOP_FREQ_HZ);
     }
 
+    barometer.gnd_press = 1013.15f;
     #if SETUP_ENABLE_HITL == false
     // Kestirim algoritmasını başlatmadan önce filtrelerin buffer'ını doldur.
     for (uint8_t i = 0; i <= 100; i++)
@@ -165,10 +163,14 @@ void task_1(void *pvParameters)
     #else
     vTaskDelay(500);
     hitl_get_sensors(&imu, &mag, &barometer);
-    barometer.gnd_press = 1007.25f;
     #endif
-    // Duruş kestirim algoritmasını başlat
-    ahrs_init(&config, &states, &imu, &mag, &barometer, &flow, &range, &flight);
+    if (ekf_init(esp_timer_get_time()) != 1)
+    {
+        printf("EKF initialization failed!\n");
+        while (1) {
+            vTaskDelay(1000);
+        }
+    }
     static uint32_t receivedValue = 0;
     while (1)
     {
@@ -176,8 +178,6 @@ void task_1(void *pvParameters)
         // burası her 1ms de bir çalışacak.
         if (xTaskNotifyWait(0, ULONG_MAX, &receivedValue, 1 / portTICK_PERIOD_MS) == pdTRUE)
         {
-            //printf("1\n");
-            //printf("%.2f,%.2f,%.2f\n", states.pitch_deg, states.roll_deg, states.heading_deg);
             // IMU verilerini oku
             #if SETUP_ENABLE_HITL == false
             icm42688p_read(&imu);
@@ -193,27 +193,25 @@ void task_1(void *pvParameters)
             // IMU verilerini alçak geçiren filtreden geçir.
             apply_biquad_lpf_to_imu(&imu, lowpass);
             // IMU verilerini notch filtreden geçir.
-            apply_biquad_notch_filter_to_imu(&imu, notch);
+            //apply_biquad_notch_filter_to_imu(&imu, notch);
             #if SETUP_USE_BLACKBOX == true
             // Bu fonksiyon, imu filtrelenmeden önce kaydedilecekse filtreden önce çağırılmalıdır.
             blackbox_save();
             #endif
-            // gyroscope integrali alarak duruşu hesapla
-            ahrs_predict();
-            // ivme ve manyetik sensör ile duruşu güncelle
-            ahrs_correct();
-            // ivme ölçümlerini body frame'den earth frame'e geçir
-            earth_frame_acceleration();
-            // earth frame'deki ivme bilgisini kullanarak yükseklik hesapla
-            altitude_predict();
-            // Yükseklik kestirimini güncelle
-            altitude_correct();
+            ekf_set_imu_data(imu.gyro_dps[X], imu.gyro_dps[Y], imu.gyro_dps[Z], imu.accel_ms2[X], imu.accel_ms2[Y], imu.accel_ms2[Z], esp_timer_get_time());
+            ekf_update();
+            states.roll_deg = ekf_get_roll_deg();
+            states.pitch_deg = ekf_get_pitch_deg();
+            states.heading_deg = ekf_get_heading_deg();
+            states.roll_dps = imu.gyro_dps[X];
+            states.pitch_dps = imu.gyro_dps[Y];
+            states.yaw_dps = imu.gyro_dps[Z];
+            states.altitude_m = -ekf_get_position_down();
+            states.vel_up_ms = -ekf_get_velocity_down();
             #if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
             optical_flow_velocity_XY();
             #endif
-            #if SETUP_COMM_TYPE == USE_WEBCOMM && SETUP_CRAFT_TYPE == CRAFT_TYPE_QUADCOPTER
-            small_drone_flight_control();
-            #elif SETUP_COMM_TYPE == USE_RC_LINK && SETUP_CRAFT_TYPE == CRAFT_TYPE_QUADCOPTER
+            #if SETUP_COMM_TYPE == USE_RC_LINK && SETUP_CRAFT_TYPE == CRAFT_TYPE_QUADCOPTER
             quadcopter_flight_control();
             #endif
         }
@@ -247,7 +245,6 @@ void task_2(void *pvParameters)
             status_led_set_brightness(100);
             // Diğer sensörlerdenden veri okuyan görevi başlat
             xTaskCreatePinnedToCore(&task_3, "task3", 1024 * 4, NULL, 1, &task3_handler, tskNO_AFFINITY);
-
             // Bu task ile işimiz kalmadı. Silebiliriz.
             vTaskDelete(NULL);
             // Kod buraya ulaşmamalı.
@@ -273,8 +270,6 @@ void task_3(void *pvParameters)
     bmp390_setup_spi();
     // Barometre geçerli veri üretene kadar bir süre bekle
     vTaskDelay(500);
-    // Yükseklik hesabında kullanılacak olan sıfır sayılacak basıncı kaydet
-    baro_set_ground_pressure(&barometer);
     // İvme ölçer ve manyetik sensör kalibrasyon görevi. Öncelik değeri (Idle = 0) olarak ayarlı
     xTaskCreatePinnedToCore(&task_4, "task4", 1024 * 4, NULL, 0, &task4_handler, tskNO_AFFINITY);
     #if SETUP_GNSS_TYPE != GNSS_NONE
@@ -282,7 +277,7 @@ void task_3(void *pvParameters)
     xTaskCreatePinnedToCore(&task_5, "task5", 1024 * 4, NULL, 1, &task5_handler, tskNO_AFFINITY);
     #endif
     // Ana görevi başlatabiliriz
-    xTaskCreatePinnedToCore(&task_1, "task1", 1024 * 4, NULL, 1, &task1_handler, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(&task_1, "task1", 1024 * 8, NULL, 1, &task1_handler, tskNO_AFFINITY);
     // Timer interrupt kurulumu
     const esp_timer_create_args_t timer1_args =
     {
@@ -301,18 +296,16 @@ void task_3(void *pvParameters)
         // Manyetik sensör verisini oku
         #if SETUP_MAGNETO_TYPE == MAG_QMC5883L
         qmc5883l_read(&mag, 0);
+        ekf_set_mag_data(mag.gauss[X], mag.gauss[Y], mag.gauss[Z], esp_timer_get_time());
         #elif SETUP_MAGNETO_TYPE == MAG_HMC5883L
         hmc5883l_read(&mag);
         #endif
         // Barometrik sensör verisini oku
         bmp390_read_spi(&barometer);
+        ekf_set_baro_data(barometer.altitude_m, esp_timer_get_time());
         #if SETUP_LIDAR_TYPE == LIDAR_TF_LUNA
         tf_luna_read_range(&range, &states);
-        //printf("%d\n", range.range_cm);
         #endif
-        //printf("%.4f\n", barometer.altitude_m);
-        //printf("%.2f,%.2f,%.2f\n", mag.axis[X], mag.axis[Y], mag.axis[Z]);
-        //printf("%.2f,%.2f\n", states.altitude_m, barometer.altitude_m);
         vTaskDelay(20);
     }
 }
@@ -473,7 +466,7 @@ void task_6(void *pvParameters)
             vTaskGetRunTimeStats(cpu_stats_buffer);
             //printf("%s\n", cpu_stats_buffer);
             parse_cpu_usage(cpu_stats_buffer, &cpu_usage);
-            //printf("Core0: %d\nCore1: %d\n\n", cpu_usage.core0_percent, cpu_usage.core1_percent);
+            //printf("Core0: %d\nCore1: %d\n\n", cpu_usage.core0_percent, cpu_usage.core1_percent); // cpu0 -> 45% cpu1 -> 1%
         }
         vTaskDelay(10);
     }

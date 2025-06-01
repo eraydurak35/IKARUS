@@ -1,5 +1,4 @@
 idf_component_register(SRCS 
-"control/small_drone_control.c"
 "control/quadcopter_control.c"
 "comminication/esp_now_comm.c"
 "comminication/web_comm.c"
@@ -13,7 +12,6 @@ idf_component_register(SRCS
 "sensors/qmc5883l.c"
 "sensors/hmc5883l.c"
 "storage/blackbox.c"
-"state_estimator.c" 
 "sensors/tf_luna.c"
 "sensors/pmw3901.c"
 "sensors/bmp390.c"
@@ -32,7 +30,6 @@ idf_component_register(SRCS
 "parameters/filter_params.c"
 "parameters/estimator_params.c"
 "parameters/param.c"
-
 "../components/ecl/airdata/WindEstimator.cpp"
 "../components/ecl/EKF/airspeed_fusion.cpp"
 "../components/ecl/EKF/control.cpp"

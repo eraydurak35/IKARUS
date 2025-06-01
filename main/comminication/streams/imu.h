@@ -13,9 +13,9 @@ void stream_message_imu(mavlink_message_t *_msg, uint8_t *_buffer, states_t *_st
     _imu->accel_ms2[X] * 400,
     _imu->accel_ms2[Y] * 400,
     _imu->accel_ms2[Z] * 400,
-    _mag->axis[X],
-    _mag->axis[Y],
-    _mag->axis[Z],
+    _mag->gauss[X],
+    _mag->gauss[Y],
+    _mag->gauss[Z],
     _imu->temp_mC);
 
     const uint16_t len = mavlink_msg_to_send_buffer(_buffer, _msg);
