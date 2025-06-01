@@ -74,8 +74,8 @@
 #define DFLT_AHRS_BETA                  0.01f
 #define DFLT_AHRS_ZETA                 0.001f
 #define DFLT_LPF_CUTOFF_HZ           80.0f
-#define DFLT_NOTCH_1_FREQ            262.0f
-#define DFLT_NOTCH_1_BNDWDTH         45.0f
+#define DFLT_NOTCH_1_FREQ            230.0f
+#define DFLT_NOTCH_1_BNDWDTH         18.0f
 #define DFLT_MC_XY_POS_P                1.0f
 #define DFLT_MC_WP_THRESHOLD          5.0f
 

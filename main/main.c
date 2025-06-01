@@ -143,13 +143,8 @@ void task_1(void *pvParameters)
         biquad_lpf_array_init(6, lowpass, config.lpf_cutoff_hz, SETUP_MAIN_LOOP_FREQ_HZ);
     }
     // F450'nin tepe gürültüsü 72Hz bant genişliği 50Hz
-    // Fırçalı dronun tepe gürültüsü 262.0Hz bant genişliği 45Hz
-    if (config.notch_1_freq == 0.0f || config.notch_1_bndwdth == 0.0f) {
-        biquad_notch_filter_array_init(6, notch, DFLT_NOTCH_1_FREQ, DFLT_NOTCH_1_BNDWDTH, SETUP_MAIN_LOOP_FREQ_HZ);
-    } else {
-        biquad_notch_filter_array_init(6, notch, config.notch_1_freq, config.notch_1_bndwdth, SETUP_MAIN_LOOP_FREQ_HZ);
-    }
-
+    // Fırçalı dronun tepe gürültüsü 238.0Hz bant genişliği 45Hz
+    biquad_notch_filter_array_init(6, notch, 230.0f, 18.0f, SETUP_MAIN_LOOP_FREQ_HZ);
     barometer.gnd_press = 1013.15f;
     #if SETUP_ENABLE_HITL == false
     // Kestirim algoritmasını başlatmadan önce filtrelerin buffer'ını doldur.
@@ -193,7 +188,7 @@ void task_1(void *pvParameters)
             // IMU verilerini alçak geçiren filtreden geçir.
             apply_biquad_lpf_to_imu(&imu, lowpass);
             // IMU verilerini notch filtreden geçir.
-            //apply_biquad_notch_filter_to_imu(&imu, notch);
+            apply_biquad_notch_filter_to_imu(&imu, notch);
             #if SETUP_USE_BLACKBOX == true
             // Bu fonksiyon, imu filtrelenmeden önce kaydedilecekse filtreden önce çağırılmalıdır.
             blackbox_save();
@@ -208,6 +203,7 @@ void task_1(void *pvParameters)
             states.yaw_dps = imu.gyro_dps[Z];
             states.altitude_m = -ekf_get_position_down();
             states.vel_up_ms = -ekf_get_velocity_down();
+            states.is_attitude_valid = ekf_is_attitude_valid();
             #if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
             optical_flow_velocity_XY();
             #endif

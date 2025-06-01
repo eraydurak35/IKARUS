@@ -71,8 +71,7 @@ extern "C" {
 
     float ekf_get_heading_deg()
     {
-        if (euler.psi() < 0.0f) return math::degrees(euler.psi()) + 360.0f;
-        return math::degrees(euler.psi());
+        return math::degrees(matrix::wrap_2pi(euler.psi()));
     }
 
     void ekf_print_status()
@@ -108,6 +107,11 @@ extern "C" {
     float ekf_get_position_down()
     {
         return position_ned(2);
+    }
+
+    uint8_t ekf_is_attitude_valid()
+    {
+        return ekf.attitude_valid() ? 1 : 0;
     }
 
 }

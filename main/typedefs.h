@@ -260,6 +260,7 @@ typedef struct
     float acc_forward_ms2;
     float acc_right_ms2;
     float acc_up_ms2;
+    uint8_t is_attitude_valid;
 } states_t;
 
 typedef struct

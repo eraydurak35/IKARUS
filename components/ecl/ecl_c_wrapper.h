@@ -6,8 +6,7 @@ extern "C" {
 
 uint8_t ekf_init(uint64_t init_time_us);
 
-void ekf_set_imu_data(float gyx, float gyy, float gyz, 
-                    float acx, float acy, float acz, uint64_t time_us);
+void ekf_set_imu_data(float gyx, float gyy, float gyz, float acx, float acy, float acz, uint64_t time_us);
 
 void ekf_set_mag_data(float mag_x, float mag_y, float mag_z, uint64_t time_us);
 
@@ -34,6 +33,8 @@ float ekf_get_position_north();
 float ekf_get_position_east();
 
 float ekf_get_position_down();
+
+uint8_t ekf_is_attitude_valid();
 
 #ifdef __cplusplus
 }

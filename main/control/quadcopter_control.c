@@ -89,9 +89,9 @@ void quadcopter_control_init(radio_control_t *rc, telemetry_t *tlm, flight_t *fl
     waypoint_p = wp;
     gnss_ptr = gnss;
 
-    biquad_lpf_configure(D_TERM_CUTOFF_FREQ, 1000.0f, &lpf_pitch_d_term);
-    biquad_lpf_configure(D_TERM_CUTOFF_FREQ, 1000.0f, &lpf_roll_d_term);
-    biquad_lpf_configure(P_YAW_CUTOFF_FREQ, 1000.0f, &lpf_yaw_p_term);
+    biquad_lpf_configure(D_TERM_CUTOFF_FREQ, SETUP_MAIN_LOOP_FREQ_HZ, &lpf_pitch_d_term);
+    biquad_lpf_configure(D_TERM_CUTOFF_FREQ, SETUP_MAIN_LOOP_FREQ_HZ, &lpf_roll_d_term);
+    biquad_lpf_configure(P_YAW_CUTOFF_FREQ, SETUP_MAIN_LOOP_FREQ_HZ, &lpf_yaw_p_term);
 }
 
 static void quadcopter_flight_mode_control()
@@ -99,7 +99,7 @@ static void quadcopter_flight_mode_control()
     // ||==============================================||
     // ||                 RC ARM LOGIC                 ||
     // ||==============================================||
-    if (ARM_ON_CONDITION(radio_p->channel[RC_ARM_CH]) && flight_p->arm_status == 0 && disarmed_by_landing == 0)
+    if ((state_p->is_attitude_valid) && (ARM_ON_CONDITION(radio_p->channel[RC_ARM_CH]) && flight_p->arm_status == 0 && disarmed_by_landing == 0))
     {
         // if alt hold is on we want throttle stick in the middle else zero
         if ((flight_p->alt_hold_status == 1 && (radio_p->channel[RC_THROTTLE_CH] < 1600 && radio_p->channel[RC_THROTTLE_CH] > 1400)) || (flight_p->alt_hold_status == 0 && radio_p->channel[RC_THROTTLE_CH] < 1100))
@@ -111,7 +111,7 @@ static void quadcopter_flight_mode_control()
             }
         }
     }
-    else if (!ARM_ON_CONDITION(radio_p->channel[RC_ARM_CH]) && (flight_p->arm_status == 1 || disarmed_by_landing == 1))
+    else if ((!state_p->is_attitude_valid) || (!ARM_ON_CONDITION(radio_p->channel[RC_ARM_CH]) && (flight_p->arm_status == 1 || disarmed_by_landing == 1)))
     {
         disarm();
         disarmed_by_landing = 0;
@@ -261,11 +261,11 @@ static void quadcopter_flight_mode_control()
     #endif
 }
 
-void quadcopter_flight_control() // 1000Hz
+void quadcopter_flight_control() // SETUP_MAIN_LOOP_FREQ_HZ
 {
     static uint8_t counter = 0;
     counter++;
-    if (counter > 100) // 10Hz
+    if (counter > (uint8_t)(SETUP_MAIN_LOOP_FREQ_HZ / 10.0f)) // 10Hz
     {
         counter = 0;
         quadcopter_flight_mode_control();
@@ -343,7 +343,7 @@ void quadcopter_flight_control() // 1000Hz
     }
 }
 
-static uint8_t outer_control_loop_rth() // 1000 Hz
+static uint8_t outer_control_loop_rth()
 {
     if (flight_p->is_rth_done == 1 || telemetry_p->is_gnss_sanity_check_ok == 0)
         return 0;
@@ -356,7 +356,7 @@ static uint8_t outer_control_loop_rth() // 1000 Hz
     return 1;
 }
 
-static uint8_t outer_control_loop_wp() // 1000 Hz
+static uint8_t outer_control_loop_wp() // SETUP_MAIN_LOOP_FREQ_HZ
 {
     // gnss not available. Return early. Fall to manual RC control
     if (telemetry_p->is_gnss_sanity_check_ok == 0) return 0;
@@ -423,7 +423,7 @@ static uint8_t navigation_controller() // 100 Hz
     static uint8_t counter = 0;
 
     counter++;
-    if (counter >= 10)
+    if (counter >= (uint8_t)(SETUP_MAIN_LOOP_FREQ_HZ / 100.0f))
     {
         counter = 0;
 
@@ -617,7 +617,7 @@ static void outer_control_loop_rc(uint8_t land_flag)
     static uint8_t prev_land_flag = 0;
 
     counter_set_point++;
-    if (counter_set_point >= 10) // 100Hz
+    if (counter_set_point >= (uint8_t)(SETUP_MAIN_LOOP_FREQ_HZ / 10.0f)) // 100Hz
     {
         counter_set_point = 0;
 
@@ -841,7 +841,7 @@ static void outer_control_loop_rc(uint8_t land_flag)
     }
 }
 
-static void inner_control_loop() // 1000Hz
+static void inner_control_loop() // SETUP_MAIN_LOOP_FREQ_HZ
 {
     static float filt_target_pitch_dps;
     static float filt_target_roll_dps;
@@ -853,20 +853,20 @@ static void inner_control_loop() // 1000Hz
     float target_yaw_dps_corrected = fabs(cosf(state_p->roll_deg * DEG_TO_RAD)) * fabs(cosf(state_p->pitch_deg * DEG_TO_RAD)) * target_p->yaw_dps;
 
     // limit angular acceleration
-    float pitch_requested_angular_accel = ((target_pitch_dps_corrected - filt_target_pitch_dps) * 0.1f) * 1000.0f;
-    float roll_requested_angular_accel = ((target_roll_dps_corrected - filt_target_roll_dps) * 0.1f) * 1000.0f;
-    float yaw_requested_angular_accel = ((target_yaw_dps_corrected - filt_target_yaw_dps) * 0.1f) * 1000.0f;
+    float pitch_requested_angular_accel = ((target_pitch_dps_corrected - filt_target_pitch_dps) * 0.1f) * SETUP_MAIN_LOOP_FREQ_HZ;
+    float roll_requested_angular_accel = ((target_roll_dps_corrected - filt_target_roll_dps) * 0.1f) * SETUP_MAIN_LOOP_FREQ_HZ;
+    float yaw_requested_angular_accel = ((target_yaw_dps_corrected - filt_target_yaw_dps) * 0.1f) * SETUP_MAIN_LOOP_FREQ_HZ;
 
-    if (pitch_requested_angular_accel > MAX_ANGULAR_ACCEL) filt_target_pitch_dps += MAX_ANGULAR_ACCEL * 0.001f;
-    else if (pitch_requested_angular_accel < -MAX_ANGULAR_ACCEL) filt_target_pitch_dps -= MAX_ANGULAR_ACCEL * 0.001f;
+    if (pitch_requested_angular_accel > MAX_ANGULAR_ACCEL) filt_target_pitch_dps += MAX_ANGULAR_ACCEL / SETUP_MAIN_LOOP_FREQ_HZ;
+    else if (pitch_requested_angular_accel < -MAX_ANGULAR_ACCEL) filt_target_pitch_dps -= MAX_ANGULAR_ACCEL / SETUP_MAIN_LOOP_FREQ_HZ;
     else filt_target_pitch_dps += (target_pitch_dps_corrected - filt_target_pitch_dps) * 0.1f;
 
-    if (roll_requested_angular_accel > MAX_ANGULAR_ACCEL) filt_target_roll_dps += MAX_ANGULAR_ACCEL * 0.001f;
-    else if (roll_requested_angular_accel < -MAX_ANGULAR_ACCEL) filt_target_roll_dps -= MAX_ANGULAR_ACCEL * 0.001f;
+    if (roll_requested_angular_accel > MAX_ANGULAR_ACCEL) filt_target_roll_dps += MAX_ANGULAR_ACCEL / SETUP_MAIN_LOOP_FREQ_HZ;
+    else if (roll_requested_angular_accel < -MAX_ANGULAR_ACCEL) filt_target_roll_dps -= MAX_ANGULAR_ACCEL / SETUP_MAIN_LOOP_FREQ_HZ;
     else filt_target_roll_dps += (target_roll_dps_corrected - filt_target_roll_dps) * 0.1f;
 
-    if (yaw_requested_angular_accel > MAX_ANGULAR_ACCEL) filt_target_yaw_dps += MAX_ANGULAR_ACCEL * 0.001f;
-    else if (yaw_requested_angular_accel < -MAX_ANGULAR_ACCEL) filt_target_yaw_dps -= MAX_ANGULAR_ACCEL * 0.001f;
+    if (yaw_requested_angular_accel > MAX_ANGULAR_ACCEL) filt_target_yaw_dps += MAX_ANGULAR_ACCEL / SETUP_MAIN_LOOP_FREQ_HZ;
+    else if (yaw_requested_angular_accel < -MAX_ANGULAR_ACCEL) filt_target_yaw_dps -= MAX_ANGULAR_ACCEL / SETUP_MAIN_LOOP_FREQ_HZ;
     else filt_target_yaw_dps += (target_yaw_dps_corrected - filt_target_yaw_dps) * 0.1f;
 
 
@@ -894,7 +894,7 @@ static void inner_control_loop() // 1000Hz
         if (fabs(target_pitch_dps_corrected) < 25.0f)
         {
             // ↓↓↓↓↓↓↓↓↓↓  pitch_deg I CALCULATION   ↓↓↓↓↓↓↓↓↓↓
-            pid.pitchIout += config_p->pitch_i * 0.000625f * (pid.errPitch + pid.errPitchPrev); //  0.000625 = 0.5 * sampleTime
+            pid.pitchIout += config_p->pitch_i * (0.5f / SETUP_MAIN_LOOP_FREQ_HZ) * (pid.errPitch + pid.errPitchPrev); //  0.000625 = 0.5 * sampleTime
             limit_symmetric(&pid.pitchIout, MAX_I);
             // ↑↑↑↑↑↑↑↑↑↑   pitch_deg I CALCULATION   ↑↑↑↑↑↑↑↑↑↑
         }
@@ -902,13 +902,13 @@ static void inner_control_loop() // 1000Hz
         if (fabs(target_roll_dps_corrected) < 25.0f)
         {
             // ↓↓↓↓↓↓↓↓↓↓   roll_deg I CALCULATION   ↓↓↓↓↓↓↓↓↓↓
-            pid.rollIout += config_p->roll_i * 0.000625f * (pid.errRoll + pid.errRollPrev);
+            pid.rollIout += config_p->roll_i * (0.5f / SETUP_MAIN_LOOP_FREQ_HZ) * (pid.errRoll + pid.errRollPrev);
             limit_symmetric(&pid.rollIout, MAX_I);
             // ↑↑↑↑↑↑↑↑↑↑   roll_deg I CALCULATION   ↑↑↑↑↑↑↑↑↑↑
         }
 
         // ↓↓↓↓↓↓↓↓↓↓   YAW I CALCULATION   ↓↓↓↓↓↓↓↓↓↓
-        pid.yawIout += config_p->yaw_i * 0.000625f * (pid.errYaw + pid.errYawPrev);
+        pid.yawIout += config_p->yaw_i * (0.5f / SETUP_MAIN_LOOP_FREQ_HZ) * (pid.errYaw + pid.errYawPrev);
         limit_symmetric(&pid.yawIout, MAX_I);
         // ↑↑↑↑↑↑↑↑↑↑   YAW I CALCULATION   ↑↑↑↑↑↑↑↑↑↑
     }
@@ -961,7 +961,7 @@ static void inner_control_loop() // 1000Hz
     {
         static uint8_t counter = 0;
         counter++;
-        if (counter >= 10) // 100 Hz
+        if (counter >= (uint8_t)(SETUP_MAIN_LOOP_FREQ_HZ / 100.0f)) // 100 Hz
         {
             counter = 0;
 
