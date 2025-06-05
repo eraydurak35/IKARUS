@@ -138,7 +138,7 @@
 #define ALIGNED_GYR_Z_AXIS_SIGN   (NEGATIVE) // Varsayılan "NEGATIVE"
 
 
-#define SETUP_MAIN_LOOP_FREQ_HZ   (500.0f)
+#define SETUP_MAIN_LOOP_FREQ_HZ   (1000.0f)
 
 
 //----------------------------------------------------------//

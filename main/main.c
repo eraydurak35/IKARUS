@@ -144,7 +144,7 @@ void task_1(void *pvParameters)
     }
     // F450'nin tepe gürültüsü 72Hz bant genişliği 50Hz
     // Fırçalı dronun tepe gürültüsü 238.0Hz bant genişliği 45Hz
-    biquad_notch_filter_array_init(6, notch, 230.0f, 18.0f, SETUP_MAIN_LOOP_FREQ_HZ);
+    biquad_notch_filter_array_init(6, notch, 262.0f, 45.0f, SETUP_MAIN_LOOP_FREQ_HZ);
     barometer.gnd_press = 1013.15f;
     #if SETUP_ENABLE_HITL == false
     // Kestirim algoritmasını başlatmadan önce filtrelerin buffer'ını doldur.
@@ -193,17 +193,69 @@ void task_1(void *pvParameters)
             // Bu fonksiyon, imu filtrelenmeden önce kaydedilecekse filtreden önce çağırılmalıdır.
             blackbox_save();
             #endif
-            ekf_set_imu_data(imu.gyro_dps[X], imu.gyro_dps[Y], imu.gyro_dps[Z], imu.accel_ms2[X], imu.accel_ms2[Y], imu.accel_ms2[Z], esp_timer_get_time());
-            ekf_update();
-            states.roll_deg = ekf_get_roll_deg();
-            states.pitch_deg = ekf_get_pitch_deg();
-            states.heading_deg = ekf_get_heading_deg();
+
+            static uint32_t imu_counter = 0;
+            static float gyx_sum = 0.0f;
+            static float gyy_sum = 0.0f;
+            static float gyz_sum = 0.0f;
+            static float acx_sum = 0.0f;
+            static float acy_sum = 0.0f;
+            static float acz_sum = 0.0f;
+            static int64_t dt_us = 0;
+            static int64_t prev_time_us = 0;
+            static float dt_sec = 0.001f;
+
+            dt_us = esp_timer_get_time() - prev_time_us;
+            prev_time_us = esp_timer_get_time();
+            dt_sec = (float)dt_us * 1e-6f;
+
+            gyx_sum += imu.gyro_dps[X];
+            gyy_sum += imu.gyro_dps[Y];
+            gyz_sum += imu.gyro_dps[Z];
+            acx_sum += imu.accel_ms2[X];
+            acy_sum += imu.accel_ms2[Y];
+            acz_sum += imu.accel_ms2[Z];
+
+            if ((++imu_counter)%10 == 0)
+            {
+                gyx_sum /= 10.0f;
+                gyy_sum /= 10.0f;
+                gyz_sum /= 10.0f;
+                acx_sum /= 10.0f;
+                acy_sum /= 10.0f;
+                acz_sum /= 10.0f;
+
+                ekf_set_imu_data(gyx_sum, gyy_sum, gyz_sum, acx_sum, acy_sum, acz_sum, esp_timer_get_time());
+
+                gyx_sum = 0.0f;
+                gyy_sum = 0.0f;
+                gyz_sum = 0.0f;
+                acx_sum = 0.0f;
+                acy_sum = 0.0f;
+                acz_sum = 0.0f;
+
+                ekf_update();
+
+                states.roll_deg = ekf_get_roll_deg();
+                states.pitch_deg = ekf_get_pitch_deg();
+                states.heading_deg = ekf_get_heading_deg();
+                states.altitude_m = -ekf_get_position_down();
+                states.vel_up_ms = -ekf_get_velocity_down();
+                states.is_attitude_valid = ekf_is_attitude_valid();
+            }
+            else
+            {
+                /* Kalmanı çağırmak masraflı olduğu için son bilgiye göre tahmin et */
+                states.roll_deg += imu.gyro_dps[X] * dt_sec;
+                states.pitch_deg += imu.gyro_dps[Y] * dt_sec;
+                states.heading_deg += imu.gyro_dps[Z] * dt_sec;
+            }
+
             states.roll_dps = imu.gyro_dps[X];
             states.pitch_dps = imu.gyro_dps[Y];
             states.yaw_dps = imu.gyro_dps[Z];
-            states.altitude_m = -ekf_get_position_down();
-            states.vel_up_ms = -ekf_get_velocity_down();
-            states.is_attitude_valid = ekf_is_attitude_valid();
+            
+
             #if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
             optical_flow_velocity_XY();
             #endif
