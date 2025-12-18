@@ -46,7 +46,6 @@ static void parse_sbus_data(radio_control_t *radio)
 
                 byte_counter = 0;
                 new_line_found = 0;
-
             }
         }
         else if (uart_data.data[i] == start_byte)
@@ -55,7 +54,6 @@ static void parse_sbus_data(radio_control_t *radio)
         }
     }
 }
-
 
 static void process_new_line(uint8_t *bytes, radio_control_t *radio)
 {
@@ -81,32 +79,33 @@ static void process_new_line(uint8_t *bytes, radio_control_t *radio)
         radio->channel[i] = scale_rc_channel(raw_channels[i]);
     }
 
-/*     static int i = 0;
-    i++;
-    if (i > 14)
-    {
-        i = 0;
-        printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", radio->channel[0], radio->channel[1], radio->channel[2], radio->channel[3], radio->channel[4], radio->channel[5], radio->channel[6], radio->channel[7], radio->channel[8], radio->channel[9], radio->channel[10], radio->channel[11], radio->channel[12], radio->channel[13]);
-    } */
+    // static int i = 0;
+    // i++;
+    // if (i > 14)
+    // {
+    //     i = 0;
+    //     printf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", radio->channel[0], radio->channel[1], radio->channel[2], radio->channel[3], radio->channel[4], radio->channel[5], radio->channel[6], radio->channel[7], radio->channel[8], radio->channel[9], radio->channel[10], radio->channel[11], radio->channel[12], radio->channel[13]);
+    // }
     // 240 min / 1023 middle / 1807 max
-    //printf("%d,%d,%d,%d\n", radio->channel[0], radio->channel[1], radio->channel[2], radio->channel[3]);
-    //printf("%d,%d,%d,%d\n", radio->channel[4], radio->channel[5], radio->channel[6], radio->channel[7]);
-    //printf("%d,%d,%d,%d\n", radio->channel[5], radio->channel[6], radio->channel[7], radio->channel[8]);
+    // printf("%d,%d,%d,%d\n", radio->channel[0], radio->channel[1], radio->channel[2], radio->channel[3]);
+    // printf("%d,%d,%d,%d\n", radio->channel[4], radio->channel[5], radio->channel[6], radio->channel[7]);
+    // printf("%d,%d,%d,%d\n", radio->channel[5], radio->channel[6], radio->channel[7], radio->channel[8]);
 }
-
 
 // Fonksiyon: Bir değeri bir aralıktan diğerine ölçeklendirir
 uint16_t scale_rc_channel(uint16_t value)
 {
     // Eski aralıktaki değeri 0-1 aralığına normalize et
     float normalized = (float)(value - 240) / (float)(1807 - 240);
-    
+
     // Yeni aralığa ölçeklendir
     uint16_t scaled_value = (normalized * (2000 - 1000) + 1000);
-    
+
     // Yeni aralığın sınırlarını kontrol et
-    if (scaled_value < 1000) return 1000;
-    if (scaled_value > 2000) return 2000;
-    
+    if (scaled_value < 1000)
+        return 1000;
+    if (scaled_value > 2000)
+        return 2000;
+
     return scaled_value;
 }

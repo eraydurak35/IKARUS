@@ -116,15 +116,15 @@ static void quadcopter_flight_mode_control()
         disarm();
         disarmed_by_landing = 0;
         /////////////////////////////////
-        //    RESET OTHER FUNCTIONS    // 
+        //    RESET OTHER FUNCTIONS    //
         flight_p->alt_hold_status = 0;
         flight_p->pos_hold_status = 0;
         use_gps_hold = 0;
         is_hold_location_set = 0;
         flight_p->waypoint_mission_status = 0;
-        #if SETUP_GNSS_TYPE != GNSS_NONE
+#if SETUP_GNSS_TYPE != GNSS_NONE
         storage_save(waypoint_p, MISSION_DATA);
-        #endif
+#endif
 
         target_p->latitude = gnss_ptr->latitude;
         target_p->longitude = gnss_ptr->longitude;
@@ -145,12 +145,13 @@ static void quadcopter_flight_mode_control()
         flight_p->alt_hold_status = 0;
     }
 
-    // ||==============================================||
-    // ||              RC POS HOLD LOGIC               ||
-    // ||==============================================||
-    #if SETUP_GNSS_TYPE != GNSS_NONE
+// ||==============================================||
+// ||              RC POS HOLD LOGIC               ||
+// ||==============================================||
+#if SETUP_GNSS_TYPE != GNSS_NONE
     if ((POS_HOLD_ON_CONDITION(radio_p->channel[RC_POS_HOLD_CH]) &&
-         flight_p->pos_hold_status == 0) && flight_p->rth_status == 0)
+         flight_p->pos_hold_status == 0) &&
+        flight_p->rth_status == 0)
     {
         flight_p->pos_hold_status = 1;
         if (telemetry_p->is_gnss_sanity_check_ok == 1)
@@ -187,11 +188,11 @@ static void quadcopter_flight_mode_control()
             target_p->longitude = waypoint_p->longitude[0];
             target_p->altitude = waypoint_p->altitude[0] / 10.0f;
         }
-        else if (waypoint_p->counter > 0 && waypoint_p->is_reached == 0 && (waypoint_p->latitude[waypoint_p->counter-1] != 0 && waypoint_p->longitude[waypoint_p->counter-1] != 0 && waypoint_p->altitude[waypoint_p->counter-1] != 0))
+        else if (waypoint_p->counter > 0 && waypoint_p->is_reached == 0 && (waypoint_p->latitude[waypoint_p->counter - 1] != 0 && waypoint_p->longitude[waypoint_p->counter - 1] != 0 && waypoint_p->altitude[waypoint_p->counter - 1] != 0))
         {
-            target_p->latitude = waypoint_p->latitude[waypoint_p->counter-1];
-            target_p->longitude = waypoint_p->longitude[waypoint_p->counter-1];
-            target_p->altitude = waypoint_p->altitude[waypoint_p->counter-1] / 10.0f;
+            target_p->latitude = waypoint_p->latitude[waypoint_p->counter - 1];
+            target_p->longitude = waypoint_p->longitude[waypoint_p->counter - 1];
+            target_p->altitude = waypoint_p->altitude[waypoint_p->counter - 1] / 10.0f;
         }
 
         navigation_start(target_p->latitude, target_p->longitude);
@@ -249,7 +250,7 @@ static void quadcopter_flight_mode_control()
 
             navigation_start(target_p->latitude, target_p->longitude);
         }
-        else if (POS_HOLD_ON_CONDITION(radio_p->channel[RC_POS_HOLD_CH]) && telemetry_p->is_gnss_sanity_check_ok == 1) //else if ((radio_p->ch6 > 1400 && radio_p->ch6 < 1600) && telemetry_p->is_gnss_sanity_check_ok == 1)
+        else if (POS_HOLD_ON_CONDITION(radio_p->channel[RC_POS_HOLD_CH]) && telemetry_p->is_gnss_sanity_check_ok == 1) // else if ((radio_p->ch6 > 1400 && radio_p->ch6 < 1600) && telemetry_p->is_gnss_sanity_check_ok == 1)
         {
             target_p->latitude = gnss_ptr->latitude;
             target_p->longitude = gnss_ptr->longitude;
@@ -258,7 +259,7 @@ static void quadcopter_flight_mode_control()
         }
         target_p->altitude = state_p->altitude_m;
     }
-    #endif
+#endif
 }
 
 void quadcopter_flight_control() // 1000Hz
@@ -269,8 +270,15 @@ void quadcopter_flight_control() // 1000Hz
     {
         counter = 0;
         quadcopter_flight_mode_control();
-    }
 
+        // printf("ARM: %d | ALT HOLD: %d | POS HOLD: %d | WP MISSION: %d | RTH: %d | BATT: %.2fV\n",
+        //        flight_p->arm_status,
+        //        flight_p->alt_hold_status,
+        //        flight_p->pos_hold_status,
+        //        flight_p->waypoint_mission_status,
+        //        flight_p->rth_status,
+        //        flight_p->battery_voltage);
+    }
 
     if (flight_p->arm_status == 1)
     {
@@ -299,7 +307,7 @@ void quadcopter_flight_control() // 1000Hz
             // ret = 3 --> wp mission ended. rth with autolanding (origin is set)
             uint8_t ret = outer_control_loop_wp();
 
-            // check if end of mission behaviour is RTH 
+            // check if end of mission behaviour is RTH
             if ((prev_ret == 1 && ret == 2) || (prev_ret == 1 && ret == 3) || (prev_ret == 0 && ret == 2) || (prev_ret == 0 && ret == 3))
             {
                 target_p->latitude = home.latitude;
@@ -359,14 +367,19 @@ static uint8_t outer_control_loop_rth() // 1000 Hz
 static uint8_t outer_control_loop_wp() // 1000 Hz
 {
     // gnss not available. Return early. Fall to manual RC control
-    if (telemetry_p->is_gnss_sanity_check_ok == 0) return 0;
+    if (telemetry_p->is_gnss_sanity_check_ok == 0)
+        return 0;
     // end of mission detected. select what to do next
     else if (waypoint_p->is_reached == 1 && (waypoint_p->counter >= MAX_WP_COUNT || (waypoint_p->latitude[waypoint_p->counter] == 0 || waypoint_p->longitude[waypoint_p->counter] == 0)))
     {
-        if (waypoint_p->end_of_mission_behaviour == 0) return 0;                                                     // fall to RC manual control (passive position hold)
-        else if (waypoint_p->end_of_mission_behaviour == 1 && home.latitude != 0 && home.longitude != 0) return 2;   // activate rth without autoland
-        else if (waypoint_p->end_of_mission_behaviour == 2 && home.latitude != 0 && home.longitude != 0) return 3;   // activate rth with autoland
-        else return 0;
+        if (waypoint_p->end_of_mission_behaviour == 0)
+            return 0; // fall to RC manual control (passive position hold)
+        else if (waypoint_p->end_of_mission_behaviour == 1 && home.latitude != 0 && home.longitude != 0)
+            return 2; // activate rth without autoland
+        else if (waypoint_p->end_of_mission_behaviour == 2 && home.latitude != 0 && home.longitude != 0)
+            return 3; // activate rth with autoland
+        else
+            return 0;
     }
 
     // set initial or next wp location as target
@@ -414,7 +427,6 @@ static uint8_t outer_control_loop_wp() // 1000 Hz
     return 1;
 }
 
-
 // This function should only be called if gnss reliable
 static uint8_t navigation_controller() // 100 Hz
 {
@@ -455,18 +467,20 @@ static uint8_t navigation_controller() // 100 Hz
             {
                 // keep heading_deg towards leash location
                 target_p->heading_deg = target_navigation_leash.bearing_deg + course_correction;
-                if (target_p->heading_deg >= 360.0) target_p->heading_deg -= 360.0f;
-                else if (target_p->heading_deg < 0) target_p->heading_deg += 360.0f;
+                if (target_p->heading_deg >= 360.0)
+                    target_p->heading_deg -= 360.0f;
+                else if (target_p->heading_deg < 0)
+                    target_p->heading_deg += 360.0f;
             }
-
         }
         else
         {
             // keep heading_deg towards leash location
             target_p->heading_deg = target_navigation_leash.bearing_deg + course_correction;
-            if (target_p->heading_deg >= 360.0) target_p->heading_deg -= 360.0f;
-            else if (target_p->heading_deg < 0) target_p->heading_deg += 360.0f;
-
+            if (target_p->heading_deg >= 360.0)
+                target_p->heading_deg -= 360.0f;
+            else if (target_p->heading_deg < 0)
+                target_p->heading_deg += 360.0f;
 
             // this calculations are unitless
             vector2_t gps_to_leash_diff;
@@ -498,19 +512,18 @@ static uint8_t navigation_controller() // 100 Hz
                     target_leash_location.longitude = target_p->longitude;
                     prev_target_navigation_distance_cm = 100000.0f;
                 }
-
             }
         }
 
-
-
         float heading_diff = state_p->heading_deg - target_p->heading_deg;
-        if (heading_diff < -180.0f) heading_diff += 360.0f;
-        else if (heading_diff > 180.0f) heading_diff -= 360.0f;
+        if (heading_diff < -180.0f)
+            heading_diff += 360.0f;
+        else if (heading_diff > 180.0f)
+            heading_diff -= 360.0f;
 
         velocity_from_distance = target_navigation_wp.distance_cm / config_p->wp_dis_vel_gain;
-        if (velocity_from_distance > config_p->max_horiz_vel) velocity_from_distance = config_p->max_horiz_vel;
-
+        if (velocity_from_distance > config_p->max_horiz_vel)
+            velocity_from_distance = config_p->max_horiz_vel;
 
         if (is_leash_at_the_target == 0)
         {
@@ -531,27 +544,27 @@ static uint8_t navigation_controller() // 100 Hz
         }
         else
         {
-            if (velocity_from_distance < 1.5f) velocity_from_distance = 1.5;
+            if (velocity_from_distance < 1.5f)
+                velocity_from_distance = 1.5;
 
             target_p->velocity_x_ms = velocity_from_distance * cosf(heading_diff * DEG_TO_RAD);
             target_p->velocity_y_ms = velocity_from_distance * sinf(-heading_diff * DEG_TO_RAD);
         }
 
-
         if (sqrtf(gnss_ptr->northVel_mms * gnss_ptr->northVel_mms + gnss_ptr->eastVel_mms * gnss_ptr->eastVel_mms) > 1000.0f)
         {
             float cog_wp_heading_diff = target_navigation_leash.bearing_deg - (gnss_ptr->headingOfMotion / 100000.0f);
 
-            if (cog_wp_heading_diff < -180.0f) cog_wp_heading_diff += 360.0f;
-            else if (cog_wp_heading_diff > 180.0f) cog_wp_heading_diff -= 360.0f;
+            if (cog_wp_heading_diff < -180.0f)
+                cog_wp_heading_diff += 360.0f;
+            else if (cog_wp_heading_diff > 180.0f)
+                cog_wp_heading_diff -= 360.0f;
 
             if (fabs(cog_wp_heading_diff) < 20.0f)
             {
                 course_correction += (gps_heading_wp_heading_diff - calculated_heading_correction) * config_p->wp_hdg_cor_gain;
             }
-                    
         }
-
 
         pid.errVel_x = -(target_p->velocity_x_ms - state_p->vel_forward_ms);
         pid.errVel_y = target_p->velocity_y_ms - state_p->vel_right_ms;
@@ -622,16 +635,16 @@ static void outer_control_loop_rc(uint8_t land_flag)
         counter_set_point = 0;
 
         // stick feed forward calculation
-/*         deriv_rc_ch0 = (radio_p->channel[RC_ROLL_CH] - prev_rc_ch0);
-        prev_rc_ch0 = radio_p->channel[RC_ROLL_CH];
-        deriv_rc_ch1 = (radio_p->channel[RC_PITCH_CH] - prev_rc_ch1);
-        prev_rc_ch1 = radio_p->channel[RC_PITCH_CH];
-        deriv_rc_ch3 = (radio_p->channel[RC_YAW_CH] - prev_rc_ch3);
-        prev_rc_ch3 = radio_p->channel[RC_YAW_CH];
+        /*         deriv_rc_ch0 = (radio_p->channel[RC_ROLL_CH] - prev_rc_ch0);
+                prev_rc_ch0 = radio_p->channel[RC_ROLL_CH];
+                deriv_rc_ch1 = (radio_p->channel[RC_PITCH_CH] - prev_rc_ch1);
+                prev_rc_ch1 = radio_p->channel[RC_PITCH_CH];
+                deriv_rc_ch3 = (radio_p->channel[RC_YAW_CH] - prev_rc_ch3);
+                prev_rc_ch3 = radio_p->channel[RC_YAW_CH];
 
-        pid.pitch_ff_out += ((deriv_rc_ch1 * config_p->ff_gain) - pid.pitch_ff_out) * 0.4f;
-        pid.roll_ff_out += ((deriv_rc_ch0 * config_p->ff_gain) - pid.roll_ff_out) * 0.4f;
-        pid.yaw_ff_out += ((deriv_rc_ch3 * config_p->ff_gain) - pid.yaw_ff_out) * 0.4f; */
+                pid.pitch_ff_out += ((deriv_rc_ch1 * config_p->ff_gain) - pid.pitch_ff_out) * 0.4f;
+                pid.roll_ff_out += ((deriv_rc_ch0 * config_p->ff_gain) - pid.roll_ff_out) * 0.4f;
+                pid.yaw_ff_out += ((deriv_rc_ch3 * config_p->ff_gain) - pid.yaw_ff_out) * 0.4f; */
 
         // detect start of land command
         if (prev_land_flag == 0 && land_flag == 1)
@@ -656,10 +669,10 @@ static void outer_control_loop_rc(uint8_t land_flag)
                     {
                         get_distance_bearing(&target_navigation_wp, target_p->latitude, target_p->longitude, gnss_ptr->latitude, gnss_ptr->longitude);
                         telemetry_p->distance_m_2d = target_navigation_wp.distance_cm / 100.0f;
-                        //telemetry_p->target_latitude = target_p->latitude;
-                        //telemetry_p->target_longitude = target_p->longitude;
+                        // telemetry_p->target_latitude = target_p->latitude;
+                        // telemetry_p->target_longitude = target_p->longitude;
 
-                        // we are outside hold threshold 
+                        // we are outside hold threshold
                         if (target_navigation_wp.distance_cm > config_p->wp_threshold_cm / 1.5f)
                         {
                             target_p->velocity_x_ms = (cosf(state_p->heading_deg * DEG_TO_RAD) * target_navigation_wp.distance_north_cm + cosf((state_p->heading_deg - 90.0f) * DEG_TO_RAD) * target_navigation_wp.distance_east_cm) / (config_p->wp_dis_vel_gain * 2.0f);
@@ -690,14 +703,14 @@ static void outer_control_loop_rc(uint8_t land_flag)
                     }
                 }
                 else
-                {   
+                {
                     // we dont have a good gps use passive hold
                     is_hold_location_set = 0;
                     target_p->velocity_x_ms = 0;
                     target_p->velocity_y_ms = 0;
                 }
             }
-            else    // pitch_deg / roll_deg stick not centered
+            else // pitch_deg / roll_deg stick not centered
             {
                 is_hold_location_set = 0;
                 // manual valocity control
@@ -768,7 +781,7 @@ static void outer_control_loop_rc(uint8_t land_flag)
         if (flight_p->alt_hold_status == 1)
         {
             if (flight_p->takeoff_status == 1)
-            {   
+            {
                 // ramp up throttle to hover value slowly for takeoff
                 pid.altIout += (config_p->hover_throttle - QUAD_IDLE_THROTTLE) / 100.0f;
 
@@ -828,15 +841,16 @@ static void outer_control_loop_rc(uint8_t land_flag)
                 }
                 limit_symmetric(&target_p->velocity_z_ms, config_p->max_vert_vel);
             }
-
         }
         else
         {
             // (QUAD_MAX_TARGET_THROTTLE - QUAD_IDLE_THROTTLE) / 1000.0 = (800 - 300) / 1000.0 = 0.5
             target_p->throttle = (radio_p->channel[RC_THROTTLE_CH] - 1000.0f) * 0.5f + QUAD_IDLE_THROTTLE;
 
-            if (target_p->throttle > QUAD_MAX_TARGET_THROTTLE) target_p->throttle = QUAD_MAX_TARGET_THROTTLE;
-            else if (target_p->throttle < QUAD_IDLE_THROTTLE) target_p->throttle = QUAD_IDLE_THROTTLE;
+            if (target_p->throttle > QUAD_MAX_TARGET_THROTTLE)
+                target_p->throttle = QUAD_MAX_TARGET_THROTTLE;
+            else if (target_p->throttle < QUAD_IDLE_THROTTLE)
+                target_p->throttle = QUAD_IDLE_THROTTLE;
         }
     }
 }
@@ -846,7 +860,7 @@ static void inner_control_loop() // 1000Hz
     static float filt_target_pitch_dps;
     static float filt_target_roll_dps;
     static float filt_target_yaw_dps;
-    
+
     // coordinate yaw turn when pitch_deg & roll_deg not zero
     float target_pitch_dps_corrected = sinf(state_p->roll_deg * DEG_TO_RAD) * target_p->yaw_dps + target_p->pitch_dps;
     float target_roll_dps_corrected = sinf(-state_p->pitch_deg * DEG_TO_RAD) * target_p->yaw_dps + target_p->roll_dps;
@@ -857,18 +871,26 @@ static void inner_control_loop() // 1000Hz
     float roll_requested_angular_accel = ((target_roll_dps_corrected - filt_target_roll_dps) * 0.1f) * 1000.0f;
     float yaw_requested_angular_accel = ((target_yaw_dps_corrected - filt_target_yaw_dps) * 0.1f) * 1000.0f;
 
-    if (pitch_requested_angular_accel > MAX_ANGULAR_ACCEL) filt_target_pitch_dps += MAX_ANGULAR_ACCEL * 0.001f;
-    else if (pitch_requested_angular_accel < -MAX_ANGULAR_ACCEL) filt_target_pitch_dps -= MAX_ANGULAR_ACCEL * 0.001f;
-    else filt_target_pitch_dps += (target_pitch_dps_corrected - filt_target_pitch_dps) * 0.1f;
+    if (pitch_requested_angular_accel > MAX_ANGULAR_ACCEL)
+        filt_target_pitch_dps += MAX_ANGULAR_ACCEL * 0.001f;
+    else if (pitch_requested_angular_accel < -MAX_ANGULAR_ACCEL)
+        filt_target_pitch_dps -= MAX_ANGULAR_ACCEL * 0.001f;
+    else
+        filt_target_pitch_dps += (target_pitch_dps_corrected - filt_target_pitch_dps) * 0.1f;
 
-    if (roll_requested_angular_accel > MAX_ANGULAR_ACCEL) filt_target_roll_dps += MAX_ANGULAR_ACCEL * 0.001f;
-    else if (roll_requested_angular_accel < -MAX_ANGULAR_ACCEL) filt_target_roll_dps -= MAX_ANGULAR_ACCEL * 0.001f;
-    else filt_target_roll_dps += (target_roll_dps_corrected - filt_target_roll_dps) * 0.1f;
+    if (roll_requested_angular_accel > MAX_ANGULAR_ACCEL)
+        filt_target_roll_dps += MAX_ANGULAR_ACCEL * 0.001f;
+    else if (roll_requested_angular_accel < -MAX_ANGULAR_ACCEL)
+        filt_target_roll_dps -= MAX_ANGULAR_ACCEL * 0.001f;
+    else
+        filt_target_roll_dps += (target_roll_dps_corrected - filt_target_roll_dps) * 0.1f;
 
-    if (yaw_requested_angular_accel > MAX_ANGULAR_ACCEL) filt_target_yaw_dps += MAX_ANGULAR_ACCEL * 0.001f;
-    else if (yaw_requested_angular_accel < -MAX_ANGULAR_ACCEL) filt_target_yaw_dps -= MAX_ANGULAR_ACCEL * 0.001f;
-    else filt_target_yaw_dps += (target_yaw_dps_corrected - filt_target_yaw_dps) * 0.1f;
-
+    if (yaw_requested_angular_accel > MAX_ANGULAR_ACCEL)
+        filt_target_yaw_dps += MAX_ANGULAR_ACCEL * 0.001f;
+    else if (yaw_requested_angular_accel < -MAX_ANGULAR_ACCEL)
+        filt_target_yaw_dps -= MAX_ANGULAR_ACCEL * 0.001f;
+    else
+        filt_target_yaw_dps += (target_yaw_dps_corrected - filt_target_yaw_dps) * 0.1f;
 
     // ↓↓↓↓↓↓↓↓↓↓   CALCULATE CURRENT ERROR   ↓↓↓↓↓↓↓↓↓↓
     pid.errPitch = filt_target_pitch_dps - state_p->pitch_dps;
@@ -967,9 +989,12 @@ static void inner_control_loop() // 1000Hz
 
             // calculate acceleration limited target velocity z
             float target_accel_z = (target_p->velocity_z_ms - accel_limited_target_z_velocity) * 100.0f;
-            if (target_accel_z > MAX_VEL_Z_ACCEL) accel_limited_target_z_velocity += MAX_VEL_Z_ACCEL * 0.01f;
-            else if (target_accel_z < -MAX_VEL_Z_ACCEL) accel_limited_target_z_velocity -= MAX_VEL_Z_ACCEL * 0.01f;
-            else accel_limited_target_z_velocity += (target_p->velocity_z_ms - accel_limited_target_z_velocity);
+            if (target_accel_z > MAX_VEL_Z_ACCEL)
+                accel_limited_target_z_velocity += MAX_VEL_Z_ACCEL * 0.01f;
+            else if (target_accel_z < -MAX_VEL_Z_ACCEL)
+                accel_limited_target_z_velocity -= MAX_VEL_Z_ACCEL * 0.01f;
+            else
+                accel_limited_target_z_velocity += (target_p->velocity_z_ms - accel_limited_target_z_velocity);
 
             // ↓↓↓↓↓↓↓↓↓↓  CALCULATE CURRENT ERROR   ↓↓↓↓↓↓↓↓↓↓
             pid.errVel_z = accel_limited_target_z_velocity - state_p->vel_up_ms;
@@ -983,8 +1008,10 @@ static void inner_control_loop() // 1000Hz
             if (flight_p->takeoff_status == 0)
             {
                 pid.altIout += config_p->alt_i * 0.005f * (pid.errVel_z + pid.errVel_z_prev); //  0.005 = 0.5 * sampleTime
-                if (pid.altIout > QUAD_MAX_TARGET_THROTTLE) pid.altIout = QUAD_MAX_TARGET_THROTTLE;
-                else if (pid.altIout < QUAD_IDLE_THROTTLE) pid.altIout = QUAD_IDLE_THROTTLE;
+                if (pid.altIout > QUAD_MAX_TARGET_THROTTLE)
+                    pid.altIout = QUAD_MAX_TARGET_THROTTLE;
+                else if (pid.altIout < QUAD_IDLE_THROTTLE)
+                    pid.altIout = QUAD_IDLE_THROTTLE;
             }
             // ↑↑↑↑↑↑↑↑↑↑   ALTITUDE I CALCULATION   ↑↑↑↑↑↑↑↑↑↑
 
@@ -994,8 +1021,10 @@ static void inner_control_loop() // 1000Hz
 
             // ↓↓↓↓↓↓↓↓↓↓   ALTITUDE PID OUT   ↓↓↓↓↓↓↓↓↓↓
             target_p->throttle = pid.altPout + pid.altIout + pid.altDout;
-            if (target_p->throttle > QUAD_MAX_TARGET_THROTTLE) target_p->throttle = QUAD_MAX_TARGET_THROTTLE;
-            else if (target_p->throttle < QUAD_IDLE_THROTTLE) target_p->throttle = QUAD_IDLE_THROTTLE;
+            if (target_p->throttle > QUAD_MAX_TARGET_THROTTLE)
+                target_p->throttle = QUAD_MAX_TARGET_THROTTLE;
+            else if (target_p->throttle < QUAD_IDLE_THROTTLE)
+                target_p->throttle = QUAD_IDLE_THROTTLE;
             // ↑↑↑↑↑↑↑↑↑↑   ALTITUDE PID OUT   ↑↑↑↑↑↑↑↑↑↑
 
             // ↓↓↓↓↓↓↓↓↓↓   HOLD LAST ERROR FOR NEXT CALCULATION   ↓↓↓↓↓↓↓↓↓↓
@@ -1015,44 +1044,51 @@ static void inner_control_loop() // 1000Hz
     // substract initial throttle value from all data it should start from 0
     // remove begining and end of the data
     // gains = polyfit(batt_v, thr_zero, 2); this is the function for matlab (2 is for second order)
-/*     if (telemetry_p->battery_voltage < 11.5f)
-        comp_target_thr += telemetry_p->battery_voltage * -48.8911436f + 564.0f; */
+    /*     if (telemetry_p->battery_voltage < 11.5f)
+            comp_target_thr += telemetry_p->battery_voltage * -48.8911436f + 564.0f; */
 
     float cosAngAbs = cosf(fabs(state_p->pitch_deg) * DEG_TO_RAD) * cosf(fabs(state_p->roll_deg) * DEG_TO_RAD);
     if (cosAngAbs != 0)
         comp_target_thr += ((1.0f / cosAngAbs) - 1.0f) * comp_target_thr;
 
-
     // ↓↓↓↓↓↓↓↓↓↓   MOTOR 1 (LEFT BOTTOM)   ↓↓↓↓↓↓↓↓↓↓
     thr.m1 = comp_target_thr - pid.pitchPIDout + pid.rollPIDout + pid.yawPIout + pid.pitch_ff_out + pid.roll_ff_out + pid.yaw_ff_out;
-    if (thr.m1 < MIN_THROTTLE) thr.m1 = MIN_THROTTLE;
-    else if (thr.m1 > MAX_THROTTLE) thr.m1 = MAX_THROTTLE;
+    if (thr.m1 < MIN_THROTTLE)
+        thr.m1 = MIN_THROTTLE;
+    else if (thr.m1 > MAX_THROTTLE)
+        thr.m1 = MAX_THROTTLE;
     // ↑↑↑↑↑↑↑↑↑↑   MOTOR 1 (LEFT BOTTOM)   ↑↑↑↑↑↑↑↑↑↑
 
     // ↓↓↓↓↓↓↓↓↓↓   MOTOR 2 (LEFT TOP)   ↓↓↓↓↓↓↓↓↓↓
     thr.m2 = comp_target_thr + pid.pitchPIDout + pid.rollPIDout - pid.yawPIout - pid.pitch_ff_out + pid.roll_ff_out - pid.yaw_ff_out;
-    if (thr.m2 < MIN_THROTTLE) thr.m2 = MIN_THROTTLE;
-    else if (thr.m2 > MAX_THROTTLE) thr.m2 = MAX_THROTTLE;
+    if (thr.m2 < MIN_THROTTLE)
+        thr.m2 = MIN_THROTTLE;
+    else if (thr.m2 > MAX_THROTTLE)
+        thr.m2 = MAX_THROTTLE;
     // ↑↑↑↑↑↑↑↑↑↑   MOTOR 2 (LEFT TOP)   ↑↑↑↑↑↑↑↑↑↑
 
     // ↓↓↓↓↓↓↓↓↓↓   MOTOR 3 (RIGHT BOTTOM)   ↓↓↓↓↓↓↓↓↓↓
     thr.m3 = comp_target_thr - pid.pitchPIDout - pid.rollPIDout - pid.yawPIout + pid.pitch_ff_out - pid.roll_ff_out - pid.yaw_ff_out;
-    if (thr.m3 < MIN_THROTTLE) thr.m3 = MIN_THROTTLE;
-    else if (thr.m3 > MAX_THROTTLE) thr.m3 = MAX_THROTTLE;
+    if (thr.m3 < MIN_THROTTLE)
+        thr.m3 = MIN_THROTTLE;
+    else if (thr.m3 > MAX_THROTTLE)
+        thr.m3 = MAX_THROTTLE;
     // ↑↑↑↑↑↑↑↑↑↑   MOTOR 3 (RIGHT BOTTOM)   ↑↑↑↑↑↑↑↑↑↑
 
     // ↓↓↓↓↓↓↓↓↓↓   MOTOR 4 (RIGHT TOP)   ↓↓↓↓↓↓↓↓↓↓
     thr.m4 = comp_target_thr + pid.pitchPIDout - pid.rollPIDout + pid.yawPIout - pid.pitch_ff_out - pid.roll_ff_out + pid.yaw_ff_out;
-    if (thr.m4 < MIN_THROTTLE) thr.m4 = MIN_THROTTLE;
-    else if (thr.m4 > MAX_THROTTLE) thr.m4 = MAX_THROTTLE;
-    // ↑↑↑↑↑↑↑↑↑↑   MOTOR 4 (RIGHT TOP)   ↑↑↑↑↑↑↑↑↑↑
+    if (thr.m4 < MIN_THROTTLE)
+        thr.m4 = MIN_THROTTLE;
+    else if (thr.m4 > MAX_THROTTLE)
+        thr.m4 = MAX_THROTTLE;
+// ↑↑↑↑↑↑↑↑↑↑   MOTOR 4 (RIGHT TOP)   ↑↑↑↑↑↑↑↑↑↑
 
-    // ↓↓↓↓↓↓↓↓↓↓   OUTPUT TO THE MOTORS   ↓↓↓↓↓↓↓↓↓↓
-    #if BENCH_MODE == 1
-        set_throttle_quadcopter(0, 0, 0, 0);
-    #else
-        set_throttle_quadcopter(thr.m1, thr.m2, thr.m3, thr.m4);
-    #endif
+// ↓↓↓↓↓↓↓↓↓↓   OUTPUT TO THE MOTORS   ↓↓↓↓↓↓↓↓↓↓
+#if BENCH_MODE == 1
+    set_throttle_quadcopter(0, 0, 0, 0);
+#else
+    set_throttle_quadcopter(thr.m1, thr.m2, thr.m3, thr.m4);
+#endif
     //  ↑↑↑↑↑↑↑↑↑↑   OUTPUT TO THE MOTORS   ↑↑↑↑↑↑↑↑↑↑
 }
 
@@ -1125,11 +1161,12 @@ static void arm()
 }
 
 uint8_t gnss_sanity_check()
-{   
+{
     // manually trigger gnss not safe for testing purposes
-    //if (radio_p->ch8 <= 1300) return 0;
+    // if (radio_p->ch8 <= 1300) return 0;
     // manually trigger gnss safe for testing purposes
-    if (gnss_ptr->satCount > 7 && gnss_ptr->hdop < 300 && gnss_ptr->fix == 3) return 1;
+    if (gnss_ptr->satCount > 7 && gnss_ptr->hdop < 300 && gnss_ptr->fix == 3)
+        return 1;
     return 0;
 }
 
@@ -1141,8 +1178,10 @@ static float calculate_target_yaw_degs_from_target_heading_deg()
     // This part ensures the craft turns from closest side to setpoint
     // Say the setpoint is 5 deg and craft is at 270, logical thing is craft turns clockwise 95 deg
     // If we dont do this craft will attempt to turn counter clockwise 265deg
-    if (degs < -180.0f * config_p->yaw_rate_scale) degs += 360.0f * config_p->yaw_rate_scale;
-    else if (degs > 180.0f * config_p->yaw_rate_scale) degs -= 360.0f * config_p->yaw_rate_scale;
+    if (degs < -180.0f * config_p->yaw_rate_scale)
+        degs += 360.0f * config_p->yaw_rate_scale;
+    else if (degs > 180.0f * config_p->yaw_rate_scale)
+        degs -= 360.0f * config_p->yaw_rate_scale;
     return degs;
 }
 
@@ -1169,7 +1208,7 @@ static uint8_t landing_detector(uint8_t need_reset)
     static uint16_t observed_throttle_value = 0;
 
     if (need_reset == 0)
-    {   
+    {
         // lowpass throttle value to decide when to say landed
         observed_throttle_value += (target_p->throttle - observed_throttle_value) * 0.01f;
 
@@ -1221,32 +1260,33 @@ static void get_distance_bearing(target_nav_t *tar_nav, int32_t lat1, int32_t lo
     lat2_rad = lat2 * 1.745329252e-9f;
     lon1_rad = lon1 * 1.745329252e-9f;
     lon2_rad = lon2 * 1.745329252e-9f;
-    
+
     // calculate lat lon difference
     dLat = lat2_rad - lat1_rad;
     dLon = lon2_rad - lon1_rad;
-    
-    // calculate haversine distance 
+
+    // calculate haversine distance
     sin_dlat = sinf(dLat / 2.0f);
     sin_dlon = sinf(dLon / 2.0f);
     cos_lat1 = cosf(lat1_rad);
-    
+
     a = sin_dlat * sin_dlat;
     tar_nav->distance_north_cm = atan2f(sqrtf(a), sqrtf(1.0f - a)) * EARTH_2_RADIUS_CM;
 
     if (dLat > 0)
         tar_nav->distance_north_cm = -tar_nav->distance_north_cm;
-    
+
     a = cos_lat1 * cos_lat1 * sin_dlon * sin_dlon;
     tar_nav->distance_east_cm = atan2f(sqrtf(a), sqrtf(1.0f - a)) * EARTH_2_RADIUS_CM;
-    
+
     if (dLon > 0)
         tar_nav->distance_east_cm = -tar_nav->distance_east_cm;
-    
+
     tar_nav->distance_cm = sqrtf(tar_nav->distance_north_cm * tar_nav->distance_north_cm + tar_nav->distance_east_cm * tar_nav->distance_east_cm);
     tar_nav->bearing_deg = atan2f(tar_nav->distance_east_cm, tar_nav->distance_north_cm) * RAD_TO_DEG;
-    
-    if (tar_nav->bearing_deg < 0) tar_nav->bearing_deg += 360.0f;
+
+    if (tar_nav->bearing_deg < 0)
+        tar_nav->bearing_deg += 360.0f;
 }
 
 static void navigation_start(int32_t latitude, int32_t longitude)
@@ -1294,7 +1334,7 @@ static uint8_t is_leash_left_behind()
     vec_to_point_y = gnss_ptr->longitude - target_leash_location.longitude;
     dot_product = vec_x * vec_to_point_x + vec_y * vec_to_point_y;
 
-    if (dot_product > 100) return 1; // if dot_product > 0 leash is behind the craft but we put some margin
-    return 0; // leash is not behind the craft
+    if (dot_product > 100)
+        return 1; // if dot_product > 0 leash is behind the craft but we put some margin
+    return 0;     // leash is not behind the craft
 }
-

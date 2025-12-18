@@ -1,11 +1,11 @@
-//  8888888 888    d8P         d8888 8888888b.  888     888  .d8888b. 
+//  8888888 888    d8P         d8888 8888888b.  888     888  .d8888b.
 //    888   888   d8P         d88888 888   Y88b 888     888 d88P  Y88b
-//    888   888  d8P         d88P888 888    888 888     888 Y88b.     
-//    888   888d88K         d88P 888 888   d88P 888     888  "Y888b.  
+//    888   888  d8P         d88P888 888    888 888     888 Y88b.
+//    888   888d88K         d88P 888 888   d88P 888     888  "Y888b.
 //    888   8888888b       d88P  888 8888888P"  888     888     "Y88b.
 //    888   888  Y88b     d88P   888 888 T88b   888     888       "888
 //    888   888   Y88b   d8888888888 888  T88b  Y88b. .d88P Y88b  d88P
-//  8888888 888    Y88b d88P     888 888   T88b  "Y88888P"   "Y8888P" 
+//  8888888 888    Y88b d88P     888 888   T88b  "Y88888P"   "Y8888P"
 
 // Colossal
 // For IKARUS Flight Controller Devkit_V1
@@ -26,6 +26,7 @@
 // ||      CUSTOM LIBRARIES      ||
 // ||############################||
 #include "mavlink/Ikarus_messages/mavlink.h"
+#include "comminication/plotter/plotter.h"
 #include "comminication/streams/stream.h"
 #include "control/small_drone_control.h"
 #include "control/quadcopter_control.h"
@@ -37,6 +38,7 @@
 #include "sensors/qmc5883l.h"
 #include "sensors/hmc5883l.h"
 #include "storage/blackbox.h"
+#include "parameters/param.h"
 #include "state_estimator.h"
 #include "sensors/tf_luna.h"
 #include "sensors/pmw3901.h"
@@ -51,8 +53,6 @@
 #include "sbus.h"
 #include "gpio.h"
 #include "hitl.h"
-
-#include "parameters/param.h"
 
 static esp_timer_handle_t timer1;
 static TaskHandle_t task1_handler;
@@ -70,7 +70,6 @@ static TaskHandle_t task7_handler;
 #if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
 static TaskHandle_t task8_handler;
 #endif
-
 
 static imu_t imu;
 static magnetometer_t mag;
@@ -91,7 +90,7 @@ static cpu_usage_t cpu_usage;
 
 #if SETUP_COMM_TYPE == USE_WEBCOMM
 static telemetry_small_integer_t telemetry;
-#else 
+#else
 static telemetry_t telemetry;
 static waypoint_t waypoint;
 #endif
@@ -123,37 +122,43 @@ void task_7(void *pvParameters);
 void task_8(void *pvParameters);
 #endif
 
-void parse_cpu_usage(char* statsBuffer, cpu_usage_t* cpuUsage);
+void parse_cpu_usage(char *statsBuffer, cpu_usage_t *cpuUsage);
 
 // Ana görev
 void task_1(void *pvParameters)
 {
-    #if SETUP_COMM_TYPE == USE_WEBCOMM
+#if SETUP_COMM_TYPE == USE_WEBCOMM
     web_comm_init(&radio, &states, &flight, &telemetry);
     small_drone_control_init(&radio, &telemetry, &flight, &target, &states, &config);
-    #elif SETUP_COMM_TYPE == USE_RC_LINK
+#elif SETUP_COMM_TYPE == USE_RC_LINK
     quadcopter_control_init(&radio, &telemetry, &flight, &target, &states, &config, &waypoint, &gnss);
     xTaskCreatePinnedToCore(&task_6, "task6", 1024 * 4, NULL, 0, &task6_handler, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(&task_7, "task7", 1024 * 4, NULL, 1, &task7_handler, tskNO_AFFINITY);
-    #endif
-    #if SETUP_OPT_FLOW_TYPE == OPT_FLOW_PMW3901
+#endif
+#if SETUP_OPT_FLOW_TYPE == OPT_FLOW_PMW3901
     xTaskCreatePinnedToCore(&task_8, "task8", 1024 * 4, NULL, 0, &task8_handler, tskNO_AFFINITY);
-    #endif
+#endif
     // 3 ivme 3 gyro için lowpass yapısını başlat
-    if (config.lpf_cutoff_hz == 0.0f) {
+    if (config.lpf_cutoff_hz == 0.0f)
+    {
         biquad_lpf_array_init(6, lowpass, DFLT_LPF_CUTOFF_HZ, SETUP_MAIN_LOOP_FREQ_HZ);
-    } else {
+    }
+    else
+    {
         biquad_lpf_array_init(6, lowpass, config.lpf_cutoff_hz, SETUP_MAIN_LOOP_FREQ_HZ);
     }
     // F450'nin tepe gürültüsü 72Hz bant genişliği 50Hz
     // Fırçalı dronun tepe gürültüsü 262.0Hz bant genişliği 45Hz
-    if (config.notch_1_freq == 0.0f || config.notch_1_bndwdth == 0.0f) {
+    if (config.notch_1_freq == 0.0f || config.notch_1_bndwdth == 0.0f)
+    {
         biquad_notch_filter_array_init(6, notch, DFLT_NOTCH_1_FREQ, DFLT_NOTCH_1_BNDWDTH, SETUP_MAIN_LOOP_FREQ_HZ);
-    } else {
+    }
+    else
+    {
         biquad_notch_filter_array_init(6, notch, config.notch_1_freq, config.notch_1_bndwdth, SETUP_MAIN_LOOP_FREQ_HZ);
     }
 
-    #if SETUP_ENABLE_HITL == false
+#if SETUP_ENABLE_HITL == false
     // Kestirim algoritmasını başlatmadan önce filtrelerin buffer'ını doldur.
     for (uint8_t i = 0; i <= 100; i++)
     {
@@ -162,11 +167,11 @@ void task_1(void *pvParameters)
         apply_biquad_notch_filter_to_imu(&imu, notch);
         vTaskDelay(2);
     }
-    #else
+#else
     vTaskDelay(500);
     hitl_get_sensors(&imu, &mag, &barometer);
     barometer.gnd_press = 1007.25f;
-    #endif
+#endif
     // Duruş kestirim algoritmasını başlat
     ahrs_init(&config, &states, &imu, &mag, &barometer, &flow, &range, &flight);
     static uint32_t receivedValue = 0;
@@ -176,28 +181,31 @@ void task_1(void *pvParameters)
         // burası her 1ms de bir çalışacak.
         if (xTaskNotifyWait(0, ULONG_MAX, &receivedValue, 1 / portTICK_PERIOD_MS) == pdTRUE)
         {
-            //printf("1\n");
-            //printf("%.2f,%.2f,%.2f\n", states.pitch_deg, states.roll_deg, states.heading_deg);
-            // IMU verilerini oku
-            #if SETUP_ENABLE_HITL == false
+
+            // printf("%ld,%.3f,%.3f,%.3f\n", timestamp, imu.gyro_dps[X], imu.gyro_dps[Y], imu.gyro_dps[Z]);
+            // printf("1\n");
+            // printf("%.2f,%.2f,%.2f\n", states.pitch_deg, states.roll_deg, states.heading_deg);
+// IMU verilerini oku
+#if SETUP_ENABLE_HITL == false
             icm42688p_read(&imu);
-            #else
+#else
             hitl_get_sensors(&imu, &mag, &barometer);
             static uint8_t counter = 0;
             counter++;
-            if (counter >= 20){
+            if (counter >= 20)
+            {
                 counter = 0;
                 baro_get_altitude_velocity(&barometer);
             }
-            #endif
+#endif
             // IMU verilerini alçak geçiren filtreden geçir.
             apply_biquad_lpf_to_imu(&imu, lowpass);
             // IMU verilerini notch filtreden geçir.
             apply_biquad_notch_filter_to_imu(&imu, notch);
-            #if SETUP_USE_BLACKBOX == true
+#if SETUP_USE_BLACKBOX == true
             // Bu fonksiyon, imu filtrelenmeden önce kaydedilecekse filtreden önce çağırılmalıdır.
             blackbox_save();
-            #endif
+#endif
             // gyroscope integrali alarak duruşu hesapla
             ahrs_predict();
             // ivme ve manyetik sensör ile duruşu güncelle
@@ -208,18 +216,17 @@ void task_1(void *pvParameters)
             altitude_predict();
             // Yükseklik kestirimini güncelle
             altitude_correct();
-            #if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
+#if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
             optical_flow_velocity_XY();
-            #endif
-            #if SETUP_COMM_TYPE == USE_WEBCOMM && SETUP_CRAFT_TYPE == CRAFT_TYPE_QUADCOPTER
+#endif
+#if SETUP_COMM_TYPE == USE_WEBCOMM && SETUP_CRAFT_TYPE == CRAFT_TYPE_QUADCOPTER
             small_drone_flight_control();
-            #elif SETUP_COMM_TYPE == USE_RC_LINK && SETUP_CRAFT_TYPE == CRAFT_TYPE_QUADCOPTER
+#elif SETUP_COMM_TYPE == USE_RC_LINK && SETUP_CRAFT_TYPE == CRAFT_TYPE_QUADCOPTER
             quadcopter_flight_control();
-            #endif
+#endif
         }
     }
 }
-
 
 // Gyro kalibrasyon görevi
 void task_2(void *pvParameters)
@@ -236,9 +243,12 @@ void task_2(void *pvParameters)
         icm42688p_read(&imu);
         // 250ms de bir LED'i yak söndür
         blink_counter++;
-        if (blink_counter == 249) blink_counter = 0;
-        else if (blink_counter == 1) status_led_set_brightness(100);
-        else if (blink_counter == 125) status_led_set_brightness(0);
+        if (blink_counter == 249)
+            blink_counter = 0;
+        else if (blink_counter == 1)
+            status_led_set_brightness(100);
+        else if (blink_counter == 125)
+            status_led_set_brightness(0);
 
         // fonksiyon 1 döndürürse kalibrasyon tamamlanmış demektir.
         if (gyro_calibration(&imu) == 1)
@@ -258,17 +268,16 @@ void task_2(void *pvParameters)
     }
 }
 
-
 void task_3(void *pvParameters)
 {
-    #if SETUP_MAGNETO_TYPE == MAG_QMC5883L
+#if SETUP_MAGNETO_TYPE == MAG_QMC5883L
     // Manyetik sensörün ayarlarını yap ve başlat
     qmc5883l_setup(&mag_calibration_data);
     qmc5883l_read(&mag, 0);
-    #elif SETUP_MAGNETO_TYPE == MAG_HMC5883L
+#elif SETUP_MAGNETO_TYPE == MAG_HMC5883L
     hmc5883l_setup(&mag_calibration_data);
     hmc5883l_read(&mag);
-    #endif
+#endif
     // bmp3xx sensörünün ayarlarını yap ve başlat
     bmp390_setup_spi();
     // Barometre geçerli veri üretene kadar bir süre bekle
@@ -277,19 +286,18 @@ void task_3(void *pvParameters)
     baro_set_ground_pressure(&barometer);
     // İvme ölçer ve manyetik sensör kalibrasyon görevi. Öncelik değeri (Idle = 0) olarak ayarlı
     xTaskCreatePinnedToCore(&task_4, "task4", 1024 * 4, NULL, 0, &task4_handler, tskNO_AFFINITY);
-    #if SETUP_GNSS_TYPE != GNSS_NONE
+#if SETUP_GNSS_TYPE != GNSS_NONE
     // GNSS alıcısından veri okuyan görevi başlat
     xTaskCreatePinnedToCore(&task_5, "task5", 1024 * 4, NULL, 1, &task5_handler, tskNO_AFFINITY);
-    #endif
+#endif
     // Ana görevi başlatabiliriz
     xTaskCreatePinnedToCore(&task_1, "task1", 1024 * 4, NULL, 1, &task1_handler, tskNO_AFFINITY);
     // Timer interrupt kurulumu
     const esp_timer_create_args_t timer1_args =
-    {
-        .callback = &timer1_callback,
-        .arg = NULL,
-        .name = "timer1"
-    };
+        {
+            .callback = &timer1_callback,
+            .arg = NULL,
+            .name = "timer1"};
     esp_timer_create(&timer1_args, &timer1);
     // SETUP_MAIN_LOOP_FREQ_HZ için timer başlat
     esp_timer_start_periodic(timer1, (uint64_t)(1000000.0f / SETUP_MAIN_LOOP_FREQ_HZ));
@@ -298,21 +306,21 @@ void task_3(void *pvParameters)
     while (1)
     {
         get_battery_voltage(&flight.battery_voltage);
-        // Manyetik sensör verisini oku
-        #if SETUP_MAGNETO_TYPE == MAG_QMC5883L
+// Manyetik sensör verisini oku
+#if SETUP_MAGNETO_TYPE == MAG_QMC5883L
         qmc5883l_read(&mag, 0);
-        #elif SETUP_MAGNETO_TYPE == MAG_HMC5883L
+#elif SETUP_MAGNETO_TYPE == MAG_HMC5883L
         hmc5883l_read(&mag);
-        #endif
+#endif
         // Barometrik sensör verisini oku
         bmp390_read_spi(&barometer);
-        #if SETUP_LIDAR_TYPE == LIDAR_TF_LUNA
+#if SETUP_LIDAR_TYPE == LIDAR_TF_LUNA
         tf_luna_read_range(&range, &states);
-        //printf("%d\n", range.range_cm);
-        #endif
-        //printf("%.4f\n", barometer.altitude_m);
-        //printf("%.2f,%.2f,%.2f\n", mag.axis[X], mag.axis[Y], mag.axis[Z]);
-        //printf("%.2f,%.2f\n", states.altitude_m, barometer.altitude_m);
+// printf("%d\n", range.range_cm);
+#endif
+        // printf("%.4f\n", barometer.altitude_m);
+        // printf("%.2f,%.2f,%.2f\n", mag.axis[X], mag.axis[Y], mag.axis[Z]);
+        // printf("%.2f,%.2f\n", states.altitude_m, barometer.altitude_m);
         vTaskDelay(20);
     }
 }
@@ -336,14 +344,14 @@ void task_4(void *pvParameters)
                 // Butona basılması ile bırakılması arasındaki süreyi ölç
                 button_push_time_difference = (esp_timer_get_time() - button_push_current_time);
 
-                #if SETUP_USE_BLACKBOX == true
+#if SETUP_USE_BLACKBOX == true
                 // Bu süre (button_push_time_difference) 1 saniyeden kısa ise blackbox verileri yazdırılır.
                 if (button_push_time_difference < 1000000)
                 {
                     // Eğer kayıtlı veri varsa (blackbox.bin dosyası bulunduysa) bu fonksiyon o dosyayı açar ve 1 döndürür.
                     // Yoksa 0 döndürür
                     if (blackbox_open())
-                    {   
+                    {
                         // Satır satır tüm veriyi sırayla okuyup konsol ekranına virgül ile ayrılmış biçimde yazdırır.
                         // Okunacak yeni bir satır varsa 1 yoksa 0 döndürür
                         while (blackbox_print())
@@ -355,8 +363,8 @@ void task_4(void *pvParameters)
                         status_led_set_brightness(100);
                     }
                 }
-                #endif
-                #if SETUP_MAGNETO_TYPE != MAG_NONE
+#endif
+#if SETUP_MAGNETO_TYPE != MAG_NONE
                 // Bu süre (button_push_time_difference) 1 ile 5 saniye arasında ise manyetik sensör kalibrasyonu seçilmiştir
                 if (button_push_time_difference >= 1000000 && button_push_time_difference <= 5000000)
                 {
@@ -364,29 +372,35 @@ void task_4(void *pvParameters)
                     // timer1 durdurulur ve silinir.
                     esp_timer_stop(timer1);
                     esp_timer_delete(timer1);
-                    if (task1_handler != NULL) vTaskDelete(task1_handler);
-                    if (task3_handler != NULL) vTaskDelete(task3_handler);
-                    #if SETUP_GNSS_TYPE != GNSS_NONE
-                    if (task5_handler != NULL) vTaskDelete(task5_handler);
-                    #endif
-                    #if SETUP_COMM_TYPE == USE_RC_LINK
-                    if (task6_handler != NULL) vTaskDelete(task6_handler);
-                    if (task7_handler != NULL) vTaskDelete(task7_handler);
-                    #endif
-                    #if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
-                    if (task8_handler != NULL) vTaskDelete(task8_handler);
-                    #endif
+                    if (task1_handler != NULL)
+                        vTaskDelete(task1_handler);
+                    if (task3_handler != NULL)
+                        vTaskDelete(task3_handler);
+#if SETUP_GNSS_TYPE != GNSS_NONE
+                    if (task5_handler != NULL)
+                        vTaskDelete(task5_handler);
+#endif
+#if SETUP_COMM_TYPE == USE_RC_LINK
+                    if (task6_handler != NULL)
+                        vTaskDelete(task6_handler);
+                    if (task7_handler != NULL)
+                        vTaskDelete(task7_handler);
+#endif
+#if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
+                    if (task8_handler != NULL)
+                        vTaskDelete(task8_handler);
+#endif
                     // Eski kalibrasyon verilerini sıfırla ki yeni kalibrasyon yapabilelim.
                     reset_calibration_data(&mag_calibration_data);
                     // Kalibrasyon fonksiyonu 1 döndürene kadar döngü devam etsin
                     while (!magnetometer_calibration(&mag))
                     {
-                        // Manyetik sensörden yeni veri oku
-                        #if SETUP_MAGNETO_TYPE == MAG_QMC5883L
+// Manyetik sensörden yeni veri oku
+#if SETUP_MAGNETO_TYPE == MAG_QMC5883L
                         qmc5883l_read(&mag, 0);
-                        #elif SETUP_MAGNETO_TYPE == MAG_HMC5883L
+#elif SETUP_MAGNETO_TYPE == MAG_HMC5883L
                         hmc5883l_read(&mag);
-                        #endif
+#endif
                         // 50ms bekle
                         vTaskDelay(50);
                     }
@@ -395,7 +409,7 @@ void task_4(void *pvParameters)
                     printf("Manyetik kalibrasyon tamamlandi\n");
                     esp_restart();
                 }
-                #endif
+#endif
                 // Bu süre (button_push_time_difference) 5 saniyeden kısa ise ivme ölçer kalibrasyonu seçilmiştir (1000000 us = 1 sn)
                 if (button_push_time_difference > 5000000)
                 {
@@ -403,18 +417,24 @@ void task_4(void *pvParameters)
                     // timer1 durdurulur ve silinir.
                     esp_timer_stop(timer1);
                     esp_timer_delete(timer1);
-                    if (task1_handler != NULL) vTaskDelete(task1_handler);
-                    if (task3_handler != NULL) vTaskDelete(task3_handler);
-                    #if SETUP_GNSS_TYPE != GNSS_NONE
-                    if (task5_handler != NULL) vTaskDelete(task5_handler);
-                    #endif
-                    #if SETUP_COMM_TYPE == USE_RC_LINK
-                    if (task6_handler != NULL) vTaskDelete(task6_handler);
-                    if (task7_handler != NULL) vTaskDelete(task7_handler);
-                    #endif
-                    #if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
-                    if (task8_handler != NULL) vTaskDelete(task8_handler);
-                    #endif
+                    if (task1_handler != NULL)
+                        vTaskDelete(task1_handler);
+                    if (task3_handler != NULL)
+                        vTaskDelete(task3_handler);
+#if SETUP_GNSS_TYPE != GNSS_NONE
+                    if (task5_handler != NULL)
+                        vTaskDelete(task5_handler);
+#endif
+#if SETUP_COMM_TYPE == USE_RC_LINK
+                    if (task6_handler != NULL)
+                        vTaskDelete(task6_handler);
+                    if (task7_handler != NULL)
+                        vTaskDelete(task7_handler);
+#endif
+#if SETUP_OPT_FLOW_TYPE != OPT_FLOW_NONE
+                    if (task8_handler != NULL)
+                        vTaskDelete(task8_handler);
+#endif
                     // Eski kalibrasyon verilerini sıfırla ki yeni kalibrasyon yapabilelim.
                     reset_calibration_data(&accel_calibration_data);
                     // Kalibrasyon fonksiyonu 1 döndürene kadar döngü devam etsin
@@ -450,7 +470,7 @@ void task_5(void *pvParameters)
         // bu görev için vTaskDelay kullanımına gerek yok
         // UART fonksiyonları zaten timeout süresi kadar burayı blokluyor
         gnss_read(&gnss);
-        //printf("%d\n", gnss.hdop);
+        // printf("%d\n", gnss.hdop);
     }
 }
 #endif
@@ -458,42 +478,72 @@ void task_5(void *pvParameters)
 #if SETUP_COMM_TYPE == USE_RC_LINK
 void task_6(void *pvParameters)
 {
-    char cpu_stats_buffer[512] = {0};
-    uint8_t counter = 0;
-    esp_now_comm_init();
-    start_mavlink_stream(&config, &waypoint, &flight, &states, &imu, &mag, &barometer, &gnss, &flow, &range, &target, &cpu_usage, &radio);
-    while (1)
-    {
-        counter++;
-        run_mavlink_stream();
 
-        if (counter > 100)
-        {
-            counter = 0;
-            vTaskGetRunTimeStats(cpu_stats_buffer);
-            //printf("%s\n", cpu_stats_buffer);
-            parse_cpu_usage(cpu_stats_buffer, &cpu_usage);
-            //printf("Core0: %d\nCore1: %d\n\n", cpu_usage.core0_percent, cpu_usage.core1_percent);
-        }
-        vTaskDelay(10);
-    }
+    // while (true)
+    // {
+    //     vTaskDelay(1000);
+    // }
+
+    // while (1)
+    // {
+    //     uint32_t timestamp = esp_timer_get_time() / 1000;
+
+    //     char buffer[128];
+
+    //     // Veri satırını string olarak oluştur
+    //     int len = snprintf(buffer, sizeof(buffer),
+    //                        "%ld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f",
+    //                        timestamp,
+    //                        imu.gyro_dps[X],
+    //                        imu.gyro_dps[Y],
+    //                        imu.gyro_dps[Z],
+    //                        imu.accel_ms2[X],
+    //                        imu.accel_ms2[Y],
+    //                        imu.accel_ms2[Z]);
+    //     // CRC32 hesapla
+    //     uint32_t crc = crc32_compute((uint8_t *)buffer, len);
+
+    //     // CRC32’yi HEX olarak sonuna ekleyip gönder
+    //     printf("%s*%08lX\n", buffer, crc);
+    //     vTaskDelay(1);
+    // }
+
+    // char cpu_stats_buffer[512] = {0};
+    // uint8_t counter = 0;
+    // esp_now_comm_init();
+    // start_mavlink_stream(&config, &waypoint, &flight, &states, &imu, &mag, &barometer, &gnss, &flow, &range, &target, &cpu_usage, &radio);
+    // while (1)
+    // {
+    //     counter++;
+    //     run_mavlink_stream();
+
+    //     if (counter > 100)
+    //     {
+    //         counter = 0;
+    //         vTaskGetRunTimeStats(cpu_stats_buffer);
+    //         // printf("%s\n", cpu_stats_buffer);
+    //         parse_cpu_usage(cpu_stats_buffer, &cpu_usage);
+    //         // printf("Core0: %d\nCore1: %d\n\n", cpu_usage.core0_percent, cpu_usage.core1_percent);
+    //     }
+    //     vTaskDelay(10);
+    // }
 }
 
 void task_7(void *pvParameters)
 {
-    #if SETUP_RC_PROTOCOL == SERIAL_IBUS
+#if SETUP_RC_PROTOCOL == SERIAL_IBUS
     ibus_init();
     while (1)
     {
         ibus_receiver_read(&radio);
     }
-    #elif SETUP_RC_PROTOCOL == SERIAL_SBUS
+#elif SETUP_RC_PROTOCOL == SERIAL_SBUS
     sbus_init();
     while (1)
     {
         sbus_receiver_read(&radio);
     }
-    #endif
+#endif
 }
 #endif
 
@@ -523,11 +573,10 @@ void task_9(void *pvParameters)
             xTaskCreatePinnedToCore(&task_1, "task1", 1024 * 4, NULL, 1, &task1_handler, tskNO_AFFINITY);
             // Timer interrupt kurulumu
             const esp_timer_create_args_t timer1_args =
-            {
-                .callback = &timer1_callback,
-                .arg = NULL,
-                .name = "timer1"
-            };
+                {
+                    .callback = &timer1_callback,
+                    .arg = NULL,
+                    .name = "timer1"};
             esp_timer_create(&timer1_args, &timer1);
             // SETUP_MAIN_LOOP_FREQ_HZ için timer başlat
             esp_timer_start_periodic(timer1, (uint64_t)(1000000.0f / SETUP_MAIN_LOOP_FREQ_HZ));
@@ -538,7 +587,7 @@ void task_9(void *pvParameters)
             if (counter >= 500)
             {
                 counter = 0;
-                //printf("1\n");
+                // printf("1\n");
                 mavlink_send_heartbeat();
             }
         }
@@ -548,51 +597,56 @@ void task_9(void *pvParameters)
 #endif
 void app_main(void)
 {
-    //nvs_flash_erase();//  (WIFI ağı görünmüyorsa bir defa bu satırı çalıştır)
-    // Non Volatile Storage birimini başlatır.
+    // nvs_flash_erase();//  (WIFI ağı görünmüyorsa bir defa bu satırı çalıştır)
+    //  Non Volatile Storage birimini başlatır.
     nvs_flash_init();
     // Varsa önceden kaydedilmiş kalibrasyon verilerini ve konfigürasyonu oku. Yoksa default değerler ile başlat
-    if (!storage_read(&mag_calibration_data, MAG_CALIB_DATA)) reset_calibration_data(&mag_calibration_data);
-    if (!storage_read(&accel_calibration_data, ACCEL_CALIB_DATA)) reset_calibration_data(&accel_calibration_data);
-    if (!storage_read(&config, CONFIG_DATA)) load_default_config(&config);
-    #if SETUP_GNSS_TYPE != GNSS_NONE
+    if (!storage_read(&mag_calibration_data, MAG_CALIB_DATA))
+        reset_calibration_data(&mag_calibration_data);
+    if (!storage_read(&accel_calibration_data, ACCEL_CALIB_DATA))
+        reset_calibration_data(&accel_calibration_data);
+    if (!storage_read(&config, CONFIG_DATA))
+        load_default_config(&config);
+#if SETUP_GNSS_TYPE != GNSS_NONE
     storage_read(&waypoint, MISSION_DATA);
-    #endif
-    #if SETUP_USE_BLACKBOX == true
+#endif
+#if SETUP_USE_BLACKBOX == true
     blackbox_init(&flight, &imu);
-    #endif
+#endif
     // GPIO pinlerini konfigüre et
     gpio_configure(&config);
     // Buton pinine interrupt service rouutine ekle
-    gpio_isr_handler_add(SETUP_BUTTON_PIN, button_ISR, (void*) SETUP_BUTTON_PIN);
-    // Komut satırı arayüzünü başlatır (UART0 kullanılıyorken bu işlev çakışmaya neden oluyor)
-    #if SETUP_GNSS_TYPE == GNSS_NONE
-    //cli_begin(&config, &accel_calibration_data, &mag_calibration_data, &imu);
-    #endif
-    #if SETUP_ENABLE_HITL == true
+    gpio_isr_handler_add(SETUP_BUTTON_PIN, button_ISR, (void *)SETUP_BUTTON_PIN);
+// Komut satırı arayüzünü başlatır (UART0 kullanılıyorken bu işlev çakışmaya neden oluyor)
+#if SETUP_GNSS_TYPE == GNSS_NONE
+// cli_begin(&config, &accel_calibration_data, &mag_calibration_data, &imu);
+#endif
+#if SETUP_ENABLE_HITL == true
     xTaskCreatePinnedToCore(&task_9, "task9", 1024 * 4, NULL, 1, &task9_handler, tskNO_AFFINITY);
-    #else
+#else
     // Gyro kalibrasyon prosedürünü başlat. Diğer görevler gyro kalibrasyonu tamamlandığında başlatılır.
     xTaskCreatePinnedToCore(&task_2, "task2", 1024 * 4, NULL, 1, &task2_handler, tskNO_AFFINITY);
-    #endif
-    
+#endif
 }
 
-
-void parse_cpu_usage(char* buffer, cpu_usage_t* cpuUsage) 
+void parse_cpu_usage(char *buffer, cpu_usage_t *cpuUsage)
 {
     uint8_t idle_values[2] = {0};
     int idleCount = 0;
-    char* line = strtok(buffer, "\n");
+    char *line = strtok(buffer, "\n");
 
-    while (line != NULL && idleCount < 2) {
-        if (strstr(line, "IDLE") != NULL) {
+    while (line != NULL && idleCount < 2)
+    {
+        if (strstr(line, "IDLE") != NULL)
+        {
             char cpuStr[16];
-            if (sscanf(line, "%*s %*u %s", cpuStr) == 1) {
+            if (sscanf(line, "%*s %*u %s", cpuStr) == 1)
+            {
                 // "%" işaretini kaldır ve tam sayıya çevir
-                char* percentChar = strchr(cpuStr, '%');
-                if (percentChar) *percentChar = '\0'; // Stringi sonlandır
-                
+                char *percentChar = strchr(cpuStr, '%');
+                if (percentChar)
+                    *percentChar = '\0'; // Stringi sonlandır
+
                 idle_values[idleCount] = 100 - (uint8_t)atoi(cpuStr);
                 idleCount++;
             }
@@ -601,10 +655,13 @@ void parse_cpu_usage(char* buffer, cpu_usage_t* cpuUsage)
     }
 
     // Büyük olanı core0_percent'e ata
-    if (idle_values[0] >= idle_values[1]) {
+    if (idle_values[0] >= idle_values[1])
+    {
         cpuUsage->core0_percent = idle_values[0];
         cpuUsage->core1_percent = idle_values[1];
-    } else {
+    }
+    else
+    {
         cpuUsage->core0_percent = idle_values[1];
         cpuUsage->core1_percent = idle_values[0];
     }

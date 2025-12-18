@@ -8,13 +8,13 @@
         "IDF_CCACHE_ENABLE": "1",
         "ESP_ROM_ELF_DIR": "c:\\espidf2024\\tool\\tools\\esp-rom-elfs\\20230320/"
     },
-    "idf.espIdfPathWin": "c:\\espidf2024\\v5.1.2\\esp-idf",
+    "idf.espIdfPathWin": "C:\\Users\\erayd\\esp\\v5.5.1\\esp-idf",
     "idf.openOcdConfigs": [
         "board/esp32s3-builtin.cfg"
     ],
-    "idf.portWin": "COM6",
+    "idf.portWin": "COM5",
     "idf.pythonBinPathWin": "c:\\espidf2024\\tool\\python_env\\idf5.1_py3.11_env\\Scripts\\python.exe",
-    "idf.toolsPathWin": "c:\\espidf2024\\tool",
+    "idf.toolsPathWin": "C:\\Users\\erayd\\.espressif",
     "idf.flashType": "UART",
     "files.associations": {
         "uart.h": "c",
@@ -36,5 +36,6 @@
         "freertos.h": "c",
         "task.h": "c",
         "nv_storage.h": "c"
-    }
+    },
+    "idf.pythonInstallPath": "C:\\Users\\erayd\\.espressif\\tools\\idf-python\\3.11.2\\python.exe"
 }

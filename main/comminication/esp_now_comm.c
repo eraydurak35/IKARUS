@@ -11,8 +11,7 @@ static esp_now_peer_info_t peerInfo;
 static const uint8_t drone_mac_address[6] = {0x04, 0x61, 0x05, 0x05, 0x3A, 0xE4};
 const uint8_t ground_station_mac_address[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 static void espnow_receive_cb(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len);
-static void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
-
+// static void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status);
 
 void esp_now_comm_init()
 {
@@ -28,7 +27,7 @@ void esp_now_comm_init()
     ESP_ERROR_CHECK(esp_now_init());
     ESP_ERROR_CHECK(esp_wifi_set_mac(WIFI_IF_STA, &drone_mac_address[0]));
 
-    ESP_ERROR_CHECK(esp_now_register_send_cb(espnow_send_cb));
+    // ESP_ERROR_CHECK(esp_now_register_send_cb(espnow_send_cb));
     ESP_ERROR_CHECK(esp_now_register_recv_cb(espnow_receive_cb));
     memcpy(peerInfo.peer_addr, ground_station_mac_address, 6);
     peerInfo.channel = 0;
@@ -116,11 +115,11 @@ void esp_now_comm_init()
     else
         telemetry_ptr->flight_mode = 0;
 
-    
+
     uint8_t buffer[sizeof(telemetry_t) + 1];
     buffer[0] = TELEM_HEADER;
     memcpy(buffer + 1, (uint8_t *)telemetry_ptr, sizeof(telemetry_t));
-    ESP_ERROR_CHECK(esp_now_send(ground_station_mac_address, buffer, sizeof(buffer))); 
+    ESP_ERROR_CHECK(esp_now_send(ground_station_mac_address, buffer, sizeof(buffer)));
 
     //respond_to_requests();
 } */
@@ -180,47 +179,46 @@ void esp_now_send_motor_test_result(float *result)
 } */
 static void espnow_receive_cb(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len)
 {
-/*     
-    if (data[0] == 0xFF && len == sizeof(gamepad_t) + 1)
-    {
-        memcpy(gamepad_ptr, data + 1, sizeof(gamepad_t));
-    } 
-    
-    if (data[0] == 0xFE && len == sizeof(config_t) + 1)
-    {
-        memcpy(config_ptr, data + 1, sizeof(config_t));
-        if (storage_save(config_ptr, CONFIG_DATA)) printf("Configuration saved\n");
-        else printf("ERROR: Configuration NOT saved!\n");
-        recieved_command_flag = 1;
-    }
-    else if (data[0] == 0xFD && len == 228)
-    {
-        parse_mission_data(data, len);
-    }
-    else if (data[0] == 0xFC && len == 2)
-    {
-        if (data[1] == 10) recieved_command_flag = 3;
-        else if (data[1] == 20) recieved_command_flag = 4;
-    }
-    else if (data[0] == 0xFB && len == 49)
-    {
-        recieved_command_flag = 5;
-        mag_data = data;
-    }
-    else if (data[0] == 0xFA)
-    {
-        *motor_test_num_ptr = data[1];
-    }
-    else if (data[0] == 0xF9)
-    {
-        recieved_command_flag = 6;
-        acc_data = data;
-    } */
+    /*
+        if (data[0] == 0xFF && len == sizeof(gamepad_t) + 1)
+        {
+            memcpy(gamepad_ptr, data + 1, sizeof(gamepad_t));
+        }
 
+        if (data[0] == 0xFE && len == sizeof(config_t) + 1)
+        {
+            memcpy(config_ptr, data + 1, sizeof(config_t));
+            if (storage_save(config_ptr, CONFIG_DATA)) printf("Configuration saved\n");
+            else printf("ERROR: Configuration NOT saved!\n");
+            recieved_command_flag = 1;
+        }
+        else if (data[0] == 0xFD && len == 228)
+        {
+            parse_mission_data(data, len);
+        }
+        else if (data[0] == 0xFC && len == 2)
+        {
+            if (data[1] == 10) recieved_command_flag = 3;
+            else if (data[1] == 20) recieved_command_flag = 4;
+        }
+        else if (data[0] == 0xFB && len == 49)
+        {
+            recieved_command_flag = 5;
+            mag_data = data;
+        }
+        else if (data[0] == 0xFA)
+        {
+            *motor_test_num_ptr = data[1];
+        }
+        else if (data[0] == 0xF9)
+        {
+            recieved_command_flag = 6;
+            acc_data = data;
+        } */
 }
-static void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
-{
-}
+// static void espnow_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
+// {
+// }
 
 /* const uint8_t *get_mag_data()
 {
@@ -240,7 +238,7 @@ static void parse_mission_data(const uint8_t *data, uint8_t len)
     if (data[1] == 1) // first wp packet received
     {
         memcpy(&buff, data, len); // save it and wait for the rest
-        wp_data_recv_time_us = esp_timer_get_time(); // reset packet timeout 
+        wp_data_recv_time_us = esp_timer_get_time(); // reset packet timeout
     }
     else if (data[1] == 2 && (esp_timer_get_time() - wp_data_recv_time_us) < 500000) // second packet received and timeout not triggered
     {
@@ -261,10 +259,10 @@ static void parse_mission_data(const uint8_t *data, uint8_t len)
 
         storage_save(waypoint_ptr, MISSION_DATA);
 
-            
-        for (int i = 0; i < 50; i++) 
+
+        for (int i = 0; i < 50; i++)
         {
             printf("Waypoint %d: Enlem = %ld, Boylam = %ld, Yükseklik = %u\n", i, waypoint_ptr->latitude[i], waypoint_ptr->longitude[i], waypoint_ptr->altitude[i]);
-        }  
+        }
     }
 } */

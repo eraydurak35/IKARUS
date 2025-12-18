@@ -1,4 +1,5 @@
 idf_component_register(SRCS 
+"comminication/plotter/plotter.c"
 "control/small_drone_control.c"
 "control/quadcopter_control.c"
 "comminication/esp_now_comm.c"
