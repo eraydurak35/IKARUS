@@ -1,6 +1,11 @@
 #include "plotter.h"
 #include <string.h>
 
+char plotter_buffer[128];
+uint32_t plotter_timestamp_ms;
+int plotter_len;
+uint32_t plotter_crc;
+
 uint32_t crc32_update(uint32_t crc, uint8_t data)
 {
     crc ^= data;

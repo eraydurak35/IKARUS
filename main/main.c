@@ -479,32 +479,16 @@ void task_5(void *pvParameters)
 void task_6(void *pvParameters)
 {
 
-    // while (true)
-    // {
-    //     vTaskDelay(1000);
-    // }
+    while (true)
+    {
+        vTaskDelay(1000);
+    }
 
     // while (1)
     // {
-    //     uint32_t timestamp = esp_timer_get_time() / 1000;
 
-    //     char buffer[128];
+    //     PLOTTER4(states.altitude_m, barometer.altitude_m, states.vel_up_ms, barometer.velocity_ms);
 
-    //     // Veri satırını string olarak oluştur
-    //     int len = snprintf(buffer, sizeof(buffer),
-    //                        "%ld,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f",
-    //                        timestamp,
-    //                        imu.gyro_dps[X],
-    //                        imu.gyro_dps[Y],
-    //                        imu.gyro_dps[Z],
-    //                        imu.accel_ms2[X],
-    //                        imu.accel_ms2[Y],
-    //                        imu.accel_ms2[Z]);
-    //     // CRC32 hesapla
-    //     uint32_t crc = crc32_compute((uint8_t *)buffer, len);
-
-    //     // CRC32’yi HEX olarak sonuna ekleyip gönder
-    //     printf("%s*%08lX\n", buffer, crc);
     //     vTaskDelay(1);
     // }
 

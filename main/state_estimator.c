@@ -5,9 +5,12 @@
 #include "quaternion.h"
 #include "esp_timer.h"
 #include "setup.h"
+#include "string.h"
+#include "comminication/plotter/plotter.h"
 // An Extended Complementary Filter (ECF) for Full-Body MARG Orientation Estimation
 // DOI:10.1109/TMECH.2020.2992296
-
+#define ALT_BUF_LEN 300
+#define BARO_MEAS_DELAY_MS 200
 static quat_t q = {1.0f, 0.0f, 0.0f, 0.0f};
 static vector3_t acc_vec = {0.0f, 0.0f, 1.0f};
 static vector3_t mag_vec = {1.0f, 0.0f, 0.0f};
@@ -22,21 +25,41 @@ static config_t *config_ptr = NULL;
 static flight_t *flight_ptr = NULL;
 static uint8_t movement_state = 0;
 // Kalman filtre parametreleri
-typedef struct {
-    float x;   // Durum (yükseklik)
-    float v;   // Hız
-    float P[2][2];  // Durum kovaryans matrisi
-    float Q[2][2];  // Süreç kovaryans matrisi
-    float R;        // Ölçüm kovaryans matrisi (barometrik sensör)
+typedef struct
+{
+    float x;       // Durum (yükseklik)
+    float v;       // Hız
+    float P[2][2]; // Durum kovaryans matrisi
+    float Q[2][2]; // Süreç kovaryans matrisi
+    float R;       // Ölçüm kovaryans matrisi (barometrik sensör)
 } kalman_t;
 
 kalman_t kf;
+
+typedef struct
+{
+    kalman_t kf_history[ALT_BUF_LEN];
+    float acc_z_history[ALT_BUF_LEN];
+    uint16_t head;
+    uint8_t filled;
+} alt_history_t;
+
+static alt_history_t alt_hist;
 
 static void get_attitude_heading();
 static void kalman_init(kalman_t *kf, float initial_height, float initial_velocity, float process_noise, float measurement_noise);
 static void kalman_predict(kalman_t *kf, float measured_acceleration, float dt);
 static void kalman_update(kalman_t *kf, float measured_height);
 static uint8_t is_movement_detected();
+
+static inline uint16_t hist_index_delay(uint16_t delay)
+{
+    // delay = 200
+    int idx = (int)alt_hist.head - delay;
+    if (idx < 0)
+        idx += ALT_BUF_LEN;
+    return (uint16_t)idx;
+}
 
 void ahrs_init(config_t *cfg, states_t *sta, imu_t *icm, magnetometer_t *hmc, bmp390_t *baro, pmw3901_t *flw, range_finder_t *rng, flight_t *flt)
 {
@@ -49,20 +72,20 @@ void ahrs_init(config_t *cfg, states_t *sta, imu_t *icm, magnetometer_t *hmc, bm
     flow_ptr = flw;
     range_ptr = rng;
 
-    #if SETUP_ENABLE_HITL == false
+#if SETUP_ENABLE_HITL == false
 
     acc_vec.x = imu_ptr->accel_ms2[X];
     acc_vec.y = imu_ptr->accel_ms2[Y];
     acc_vec.z = imu_ptr->accel_ms2[Z];
 
-    #if SETUP_MAGNETO_TYPE != MAG_NONE
+#if SETUP_MAGNETO_TYPE != MAG_NONE
 
     mag_vec.x = mag_ptr->axis[X];
     mag_vec.y = mag_ptr->axis[Y];
     mag_vec.z = mag_ptr->axis[Z];
 
-    #endif
-    #else
+#endif
+#else
 
     acc_vec.x = 0.0f;
     acc_vec.y = 0.0f;
@@ -71,19 +94,21 @@ void ahrs_init(config_t *cfg, states_t *sta, imu_t *icm, magnetometer_t *hmc, bm
     mag_vec.x = -1.0f;
     mag_vec.y = 0.0f;
     mag_vec.z = 0.0f;
-    #endif
+#endif
 
     // Başlangıç anındaki quaternion duruşu ivme ve manyetik vektörlerden hesapla
     get_quat_from_vector_measurements(&acc_vec, &mag_vec, &q);
     kalman_init(&kf, 0, 0, 0.001f, 10.0f);
-}
 
+    memset(&alt_hist, 0, sizeof(alt_hist));
+    alt_hist.head = 0;
+}
 
 void ahrs_predict()
 {
     static int64_t t = 0;
     float dt = ((esp_timer_get_time() - t)) / 1000000.0f;
-    t = esp_timer_get_time();   
+    t = esp_timer_get_time();
 
     movement_state = is_movement_detected();
 
@@ -148,7 +173,7 @@ void ahrs_correct()
     mag_vec.x = mag_ptr->axis[X];
     mag_vec.y = mag_ptr->axis[Y];
     mag_vec.z = mag_ptr->axis[Z];
-    
+
     norm_vector3(&mag_vec);
 
     temp = cross_product(&acc_vec, &mag_vec);
@@ -208,15 +233,15 @@ static void get_attitude_heading()
     state_ptr->roll_deg = euler.y;
     state_ptr->heading_deg = euler.z - config_ptr->mag_declin_deg;
 
-    if (state_ptr->heading_deg < 0) state_ptr->heading_deg += 360.0f;
-    else if (state_ptr->heading_deg > 360.0f) state_ptr->heading_deg -= 360.0f;
+    if (state_ptr->heading_deg < 0)
+        state_ptr->heading_deg += 360.0f;
+    else if (state_ptr->heading_deg > 360.0f)
+        state_ptr->heading_deg -= 360.0f;
 
     state_ptr->roll_dps = imu_ptr->gyro_dps[X];
     state_ptr->pitch_dps = imu_ptr->gyro_dps[Y];
     state_ptr->yaw_dps = imu_ptr->gyro_dps[Z];
 }
-
-
 
 // Heading (yaw) açısndan bağımsız olarak ivme ölçümlerini body frame'den earth frame'e geçir
 void earth_frame_acceleration()
@@ -251,34 +276,41 @@ void earth_frame_acceleration()
     state_ptr->acc_right_ms2 = imu_ptr->accel_ms2[X] * rot_matrix[0][1] + imu_ptr->accel_ms2[Y] * rot_matrix[1][1] + imu_ptr->accel_ms2[Z] * rot_matrix[2][1];
     state_ptr->acc_up_ms2 = (imu_ptr->accel_ms2[X] * rot_matrix[0][2] + imu_ptr->accel_ms2[Y] * rot_matrix[1][2] + imu_ptr->accel_ms2[Z] * rot_matrix[2][2]) - 9.806f;
 
+    /*  static float rot_matrix[3][3] = {0};
 
-/*  static float rot_matrix[3][3] = {0};
+        rot_matrix[0][0] = (q.w * q.w) + (q.x * q.x) - (q.y * q.y) - (q.z * q.z);
+        rot_matrix[0][1] = 2.0f * (q.x * q.y - q.w * q.z);
+        rot_matrix[0][2] = 2.0f * (q.x * q.z + q.w * q.y);
 
-    rot_matrix[0][0] = (q.w * q.w) + (q.x * q.x) - (q.y * q.y) - (q.z * q.z);
-    rot_matrix[0][1] = 2.0f * (q.x * q.y - q.w * q.z);
-    rot_matrix[0][2] = 2.0f * (q.x * q.z + q.w * q.y);
+        rot_matrix[1][0] = 2.0f * (q.x * q.y + q.w * q.z);
+        rot_matrix[1][1] = (q.w * q.w) - (q.x * q.x) + (q.y * q.y) - (q.z * q.z);
+        rot_matrix[1][2] = 2.0f * (q.y * q.z - q.w * q.x);
 
-    rot_matrix[1][0] = 2.0f * (q.x * q.y + q.w * q.z);
-    rot_matrix[1][1] = (q.w * q.w) - (q.x * q.x) + (q.y * q.y) - (q.z * q.z);
-    rot_matrix[1][2] = 2.0f * (q.y * q.z - q.w * q.x);
+        rot_matrix[2][0] = 2.0f * (q.x * q.z - q.w * q.y);
+        rot_matrix[2][1] = 2.0f * (q.w * q.x + q.y * q.z);
+        rot_matrix[2][2] = (q.w * q.w) - (q.x * q.x) - (q.y * q.y) + (q.z * q.z);
 
-    rot_matrix[2][0] = 2.0f * (q.x * q.z - q.w * q.y);
-    rot_matrix[2][1] = 2.0f * (q.w * q.x + q.y * q.z);
-    rot_matrix[2][2] = (q.w * q.w) - (q.x * q.x) - (q.y * q.y) + (q.z * q.z);
-
-    state_ptr->acc_right_ms2 = -(imu_ptr->accel_ms2[Y] * -rot_matrix[0][0] + imu_ptr->accel_ms2[X] * -rot_matrix[0][1] + imu_ptr->accel_ms2[Z] * rot_matrix[0][2]);
-    state_ptr->acc_forward_ms2 = (imu_ptr->accel_ms2[Y] * -rot_matrix[1][0] + imu_ptr->accel_ms2[X] * -rot_matrix[1][1] + imu_ptr->accel_ms2[Z] * rot_matrix[1][2]);
-    state_ptr->acc_up_ms2 = (imu_ptr->accel_ms2[Y] * -rot_matrix[2][0] + imu_ptr->accel_ms2[X] * -rot_matrix[2][1] + imu_ptr->accel_ms2[Z] * rot_matrix[2][2]) - 9.806f; */
+        state_ptr->acc_right_ms2 = -(imu_ptr->accel_ms2[Y] * -rot_matrix[0][0] + imu_ptr->accel_ms2[X] * -rot_matrix[0][1] + imu_ptr->accel_ms2[Z] * rot_matrix[0][2]);
+        state_ptr->acc_forward_ms2 = (imu_ptr->accel_ms2[Y] * -rot_matrix[1][0] + imu_ptr->accel_ms2[X] * -rot_matrix[1][1] + imu_ptr->accel_ms2[Z] * rot_matrix[1][2]);
+        state_ptr->acc_up_ms2 = (imu_ptr->accel_ms2[Y] * -rot_matrix[2][0] + imu_ptr->accel_ms2[X] * -rot_matrix[2][1] + imu_ptr->accel_ms2[Z] * rot_matrix[2][2]) - 9.806f; */
 }
-
 
 void altitude_predict()
 {
-    static int64_t t = 0; 
+    static int64_t t = 0;
     float dt = ((esp_timer_get_time() - t)) / 1000000.0f;
     t = esp_timer_get_time();
 
     kalman_predict(&kf, state_ptr->acc_up_ms2, dt);
+
+    alt_hist.kf_history[alt_hist.head] = kf;
+    alt_hist.acc_z_history[alt_hist.head] = state_ptr->acc_up_ms2;
+    alt_hist.head++;
+    if (alt_hist.head >= ALT_BUF_LEN)
+    {
+        alt_hist.head = 0;
+        alt_hist.filled = 1;
+    }
 }
 
 void altitude_correct()
@@ -288,13 +320,35 @@ void altitude_correct()
     if (counter >= (uint16_t)(SETUP_MAIN_LOOP_FREQ_HZ / 50.0f))
     {
         counter = 0;
-        kalman_update(&kf, baro_ptr->altitude_m);
+
+        if (alt_hist.filled == 0)
+        {
+            return;
+        }
+
+        uint16_t idx = hist_index_delay(BARO_MEAS_DELAY_MS);
+        kalman_t kf_upd = alt_hist.kf_history[idx];
+
+        kalman_update(&kf_upd, baro_ptr->altitude_m);
+
+        while (idx != alt_hist.head)
+        {
+            uint16_t next = idx + 1;
+            if (next >= ALT_BUF_LEN)
+                next = 0;
+
+            kalman_predict(&kf_upd, alt_hist.acc_z_history[idx], 0.001f);
+
+            alt_hist.kf_history[next] = kf_upd;
+            idx = next;
+        }
+
+        kf = kf_upd;
     }
-    
 }
 
 // Kalman filtresi başlatma fonksiyonu
-static void kalman_init(kalman_t *kf, float initial_height, float initial_velocity, float process_noise, float measurement_noise) 
+static void kalman_init(kalman_t *kf, float initial_height, float initial_velocity, float process_noise, float measurement_noise)
 {
     kf->x = initial_height;
     kf->v = initial_velocity;
@@ -310,7 +364,7 @@ static void kalman_init(kalman_t *kf, float initial_height, float initial_veloci
 }
 
 // Predict adımı
-static void kalman_predict(kalman_t *kf, float measured_acceleration, float dt) 
+static void kalman_predict(kalman_t *kf, float measured_acceleration, float dt)
 {
     // Ön tahmin
     kf->x = kf->x + kf->v * dt + 0.5f * measured_acceleration * dt * dt;
@@ -327,12 +381,12 @@ static void kalman_predict(kalman_t *kf, float measured_acceleration, float dt)
 }
 
 // Update adımı
-static void kalman_update(kalman_t *kf, float measured_height) 
+static void kalman_update(kalman_t *kf, float measured_height)
 {
     // Ölçüm yenilemesi
     float y = measured_height - kf->x; // Ölçüm yeniliği
-    float S = kf->P[0][0] + kf->R; // Yenilik kovaryansı
-    float K[2]; // Kalman kazancı
+    float S = kf->P[0][0] + kf->R;     // Yenilik kovaryansı
+    float K[2];                        // Kalman kazancı
     K[0] = kf->P[0][0] / S;
     K[1] = kf->P[1][0] / S;
 
@@ -340,10 +394,16 @@ static void kalman_update(kalman_t *kf, float measured_height)
     kf->x += K[0] * y;
     kf->v += K[1] * y;
 
-    //printf("%.2f,%.2f\n", kf->x, baro_ptr->altitude_m);
-    //printf("%.2f,%.2f\n", kf->v, baro_ptr->velocity_ms);
+    // printf("%.2f,%.2f\n", kf->x, baro_ptr->altitude_m);
+    // printf("%.2f,%.2f\n", kf->v, baro_ptr->velocity_ms);
 
-    //printf("%.4f,%.4f\n", K[0], K[1]);
+    // printf("%.4f,%.4f\n", K[0], K[1]);
+
+    // uint16_t idx = hist_index_delay(180);
+    // kalman_t *s = &alt_hist.kf_history[idx];
+
+    // PLOTTER2(kf->x, measured_height);
+    // PLOTTER1(y);
 
     // Kovaryans matrisi güncellemesi
     float P00_temp = kf->P[0][0];
@@ -380,7 +440,6 @@ void optical_flow_velocity_XY()
         // y axis is not needed
         flow_ptr->velocity_x_ms -= (state_ptr->yaw_dps * DEG_TO_RAD) * 0.045f;
     }
-
 }
 
 static uint8_t is_movement_detected()
@@ -388,7 +447,9 @@ static uint8_t is_movement_detected()
     static float gyro_vector = 0;
     static float filt_vector = 0;
     gyro_vector = imu_ptr->gyro_dps[X] * imu_ptr->gyro_dps[X] + imu_ptr->gyro_dps[Y] * imu_ptr->gyro_dps[Y] + imu_ptr->gyro_dps[Z] * imu_ptr->gyro_dps[Z];
-    if (gyro_vector > 2000.0f) gyro_vector = 2000.0f;
+    if (gyro_vector > 2000.0f)
+        gyro_vector = 2000.0f;
     filt_vector += (gyro_vector - filt_vector) * 0.001f;
-    return (filt_vector > GYRO_MOVEMENT_DETECT_THRESHOLD) ? 1 : 0;;
+    return (filt_vector > GYRO_MOVEMENT_DETECT_THRESHOLD) ? 1 : 0;
+    ;
 }
